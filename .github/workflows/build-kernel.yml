@@ -96,7 +96,10 @@ jobs:
             -b rpi-6.12.y \
             https://github.com/raspberrypi/linux \
             kernel-src
-          echo "✅ Cloned: $(git -C kernel-src log --oneline -1)"
+          cd kernel-src
+          git fetch --depth=100 origin c1924e0
+          git checkout c1924e0
+          echo "✅ Checked out commit: $(git log --oneline -1)"
 
       - name: Apply patches
         run: |
