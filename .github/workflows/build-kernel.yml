@@ -123,7 +123,7 @@ jobs:
           make \
             KERNEL=kernel8 \
             LOCALVERSION=-zerocd+ \
-            -j$(nproc) \
+            -j4 \
             bindeb-pkg
 
           echo "✅ Build completed"
