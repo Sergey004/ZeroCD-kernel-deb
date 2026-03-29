@@ -11,7 +11,7 @@ on:
 jobs:
   check:
     name: Check upstream for changes
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-24.04
     outputs:
       sha: ${{ steps.upstream.outputs.sha }}
       sha_short: ${{ steps.upstream.outputs.sha_short }}
@@ -55,7 +55,7 @@ jobs:
     name: Build kernel
     needs: check
     if: needs.check.outputs.skip != 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm
     permissions:
       contents: write
 
@@ -75,16 +75,12 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            gcc-aarch64-linux-gnu \
             bc bison flex \
             libssl-dev libelf-dev \
             build-essential \
-            crossbuild-essential-arm64 \
             debhelper \
             dpkg-dev apt-utils gnupg \
-            make rsync packaging-dev \
-            libssl-dev
-            
+            make rsync
 
       - name: Clone raspberrypi/linux (rpi-6.12.y)
         run: |
@@ -111,14 +107,10 @@ jobs:
       - name: Build kernel (bcm2711_defconfig, bindeb-pkg)
         run: |
           cd kernel-src
-          export ARCH=arm64
-          export CROSS_COMPILE=aarch64-linux-gnu-
 
           make bcm2711_defconfig
 
           make \
-            ARCH=arm64 \
-            CROSS_COMPILE=aarch64-linux-gnu- \
             KERNEL=kernel8 \
             LOCALVERSION=v8-zerocd+ \
             -j$(nproc) \
