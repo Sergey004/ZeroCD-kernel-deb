@@ -37,9 +37,9 @@ jobs:
       - name: Check if this SHA was already built
         id: check
         run: |
-          if [ -f apt-repo/.last_built_sha ]; then
+          if[ -f apt-repo/.last_built_sha ]; then
             LAST=$(cat apt-repo/.last_built_sha)
-            if[ "$LAST" = "${{ steps.upstream.outputs.sha }}" ]; then
+            if [ "$LAST" = "${{ steps.upstream.outputs.sha }}" ]; then
               echo "skip=true" >> $GITHUB_OUTPUT
               echo "✅ Upstream не изменился ($LAST), пропускаем сборку."
             else
