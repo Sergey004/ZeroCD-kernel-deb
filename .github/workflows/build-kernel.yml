@@ -97,7 +97,7 @@ jobs:
             https://github.com/raspberrypi/linux \
             kernel-src
           cd kernel-src
-          git checkout c1924e0
+          git checkout 47d9548fdf3cff7c8fc8cc332d30a9634415b0b1
           echo "✅ Checked out commit: $(git log --oneline -1)"
 
       - name: Apply patches
