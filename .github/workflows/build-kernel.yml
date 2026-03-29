@@ -155,8 +155,8 @@ jobs:
             This package always depends on the latest ZeroCD kernel headers.
           EOF
 
-        dpkg-deb --build meta2 linux-headers-zerocd_1.0_arm64.deb
-        mv linux-headers-zerocd_1.0_arm64.deb debs/
+          dpkg-deb --build meta2 linux-headers-zerocd_1.0_arm64.deb
+          mv linux-headers-zerocd_1.0_arm64.deb debs/
 
       - name: Collect .deb packages
         run: |
