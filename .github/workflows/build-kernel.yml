@@ -39,7 +39,7 @@ jobs:
         run: |
           if [ -f apt-repo/.last_built_sha ]; then
             LAST=$(cat apt-repo/.last_built_sha)
-            if [ "$LAST" = "${{ steps.upstream.outputs.sha }}" ]; then
+            if[ "$LAST" = "${{ steps.upstream.outputs.sha }}" ]; then
               echo "skip=true" >> $GITHUB_OUTPUT
               echo "✅ Upstream не изменился ($LAST), пропускаем сборку."
             else
@@ -118,14 +118,74 @@ jobs:
 
           echo "✅ Сборка завершена"
 
-
       - name: Collect .deb packages
         run: |
           mkdir -p debs
-          # bindeb-pkg кладёт .deb в родительскую папку (рядом с kernel-src)
-          mv *.deb debs/ 2>/dev/null || true
+          
+          # Безопасный поиск и перенос .deb файлов (не роняет скрипт при ошибке)
+          # Забирает пакеты отовсюду, исключая саму папку debs/
+          find . -maxdepth 2 -type f -name "*.deb" -not -path "./debs/*" -exec mv {} debs/ \;
+          
           echo "📦 Собранные пакеты:"
           ls -lh debs/
+
+      - name: Build meta package (linux-image-zerocd)
+        run: |
+          # Ищем файл через find (чтобы ls не ронял CI в случае чего)
+          PKG_FILE=$(find debs -maxdepth 1 -name "linux-image-*.deb" | head -n 1)
+          
+          if [ -z "$PKG_FILE" ]; then
+            echo "❌ Ошибка: пакет linux-image не найден!"
+            exit 1
+          fi
+          
+          # Надежный способ получить чистое имя пакета без версий и подчеркиваний
+          REAL_PKG_NAME=$(dpkg-deb -f "$PKG_FILE" Package)
+          echo "✅ Зависимость будет: $REAL_PKG_NAME"
+
+          mkdir -p meta/DEBIAN
+          cat > meta/DEBIAN/control <<EOF
+          Package: linux-image-zerocd
+          Version: 1.0
+          Section: kernel
+          Priority: optional
+          Architecture: arm64
+          Maintainer: Sergey004
+          Depends: $REAL_PKG_NAME
+          Description: ZeroCD kernel meta package
+            This package always depends on the latest ZeroCD kernel.
+          EOF
+
+          dpkg-deb --build meta linux-image-zerocd_1.0_arm64.deb
+          mv linux-image-zerocd_1.0_arm64.deb debs/
+
+      - name: Build meta package (linux-headers-zerocd)
+        run: |
+          PKG_FILE=$(find debs -maxdepth 1 -name "linux-headers-*.deb" | head -n 1)
+          
+          if [ -z "$PKG_FILE" ]; then
+            echo "❌ Ошибка: пакет linux-headers не найден!"
+            exit 1
+          fi
+          
+          REAL_PKG_NAME=$(dpkg-deb -f "$PKG_FILE" Package)
+          echo "✅ Зависимость будет: $REAL_PKG_NAME"
+
+          mkdir -p meta2/DEBIAN
+          cat > meta2/DEBIAN/control <<EOF
+          Package: linux-headers-zerocd
+          Version: 1.0
+          Section: kernel
+          Priority: optional
+          Architecture: arm64
+          Maintainer: Sergey004
+          Depends: $REAL_PKG_NAME
+          Description: ZeroCD kernel headers meta package
+            This package always depends on the latest ZeroCD kernel headers.
+          EOF
+
+          dpkg-deb --build meta2 linux-headers-zerocd_1.0_arm64.deb
+          mv linux-headers-zerocd_1.0_arm64.deb debs/
 
       - name: Import GPG key
         run: |
@@ -171,7 +231,6 @@ jobs:
         run: |
           cd apt-repo/dists/stable
 
-          # InRelease — inline подпись (современный способ)
           gpg --batch --yes \
               --passphrase "${{ secrets.GPG_PASSPHRASE }}" \
               --pinentry-mode loopback \
@@ -179,7 +238,6 @@ jobs:
               --clearsign \
               -o InRelease Release
 
-          # Release.gpg — detached подпись (для старых apt)
           gpg --batch --yes \
               --passphrase "${{ secrets.GPG_PASSPHRASE }}" \
               --pinentry-mode loopback \
