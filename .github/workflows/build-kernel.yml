@@ -11,7 +11,7 @@ on:
 jobs:
   check:
     name: Check upstream for changes
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm
     outputs:
       sha: ${{ steps.upstream.outputs.sha }}
       sha_short: ${{ steps.upstream.outputs.sha_short }}
@@ -83,9 +83,7 @@ jobs:
             debhelper \
             dpkg-dev apt-utils gnupg \
             make rsync packaging-dev \
-          sudo dpkg --add-architecture arm64
-          sudo apt update
-          sudo apt install libssl-dev:arm64
+            libssl-dev
             
 
       - name: Clone raspberrypi/linux (rpi-6.12.y)
