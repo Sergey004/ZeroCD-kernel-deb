@@ -2,11 +2,11 @@ name: Build ZeroCD Kernel
 
 on:
   schedule:
-    - cron: '0 3 * * *'      # Каждый день в 3:00 UTC
-  workflow_dispatch:           # Ручной запуск
+    - cron: '0 3 * * *'      # Daily at 3:00 UTC
+  workflow_dispatch:           # Manual trigger
   push:
     paths:
-      - 'patches/**.patch'    # При изменении патчей
+      - 'patches/**.patch'    # Trigger on patch changes
 
 jobs:
   check:
@@ -24,7 +24,7 @@ jobs:
           set -e
           SHA=$(git ls-remote https://github.com/raspberrypi/linux refs/heads/rpi-6.12.y | cut -f1)
           if [ -z "$SHA" ]; then
-            echo "❌ Ошибка: не удалось получить SHA из репозитория!"
+            echo "❌ Error: failed to get SHA from repository!"
             exit 1
           fi
           echo "sha=$SHA" >> $GITHUB_OUTPUT
@@ -47,14 +47,14 @@ jobs:
             LAST=$(cat apt-repo/.last_built_sha)
             if [ "$LAST" = "${{ steps.upstream.outputs.sha }}" ]; then
               echo "skip=true" >> $GITHUB_OUTPUT
-              echo "✅ Upstream не изменился ($LAST), пропускаем сборку."
+              echo "✅ Upstream unchanged ($LAST), skipping build."
             else
               echo "skip=false" >> $GITHUB_OUTPUT
-              echo "🔄 Новый коммит: ${{ steps.upstream.outputs.sha }}"
+              echo "🔄 New commit: ${{ steps.upstream.outputs.sha }}"
             fi
           else
             echo "skip=false" >> $GITHUB_OUTPUT
-            echo "🆕 Первая сборка."
+            echo "🆕 First build."
           fi
 
   build:
@@ -96,7 +96,7 @@ jobs:
             -b rpi-6.12.y \
             https://github.com/raspberrypi/linux \
             kernel-src
-          echo "✅ Клонировано: $(git -C kernel-src log --oneline -1)"
+          echo "✅ Cloned: $(git -C kernel-src log --oneline -1)"
 
       - name: Apply patches
         run: |
@@ -104,13 +104,13 @@ jobs:
           cd kernel-src
           PATCHES=$(ls ../repo/patches/00-*.patch 2>/dev/null || true)
           if [ -z "$PATCHES" ]; then
-            echo "⚠️  Патчей не найдено в patches/00-*.patch — сборка без патчей"
+            echo "⚠️  No patches found in patches/00-*.patch - building without patches"
           else
             for patch in ../repo/patches/00-*.patch; do
               echo "▶ Applying: $(basename $patch)"
               git apply --reject --whitespace=fix "$patch"
             done
-            echo "✅ Все патчи применены"
+            echo "✅ All patches applied"
           fi
 
       - name: Build kernel (bcm2711_defconfig, bindeb-pkg)
@@ -126,41 +126,91 @@ jobs:
             -j$(nproc) \
             bindeb-pkg
 
-          echo "✅ Сборка завершена"
+          echo "✅ Build completed"
 
       - name: Collect .deb packages
         run: |
           set -e
           mkdir -p debs
           
-          # Безопасный поиск и перенос .deb файлов
+          # Safe search and mv .deb files
           find . -maxdepth 2 -type f -name "*.deb" -not -path "./debs/*" -exec mv {} debs/ \;
           
-          # Проверка что пакеты найдены
+          # Verify that packages were found
           if [ -z "$(find debs -maxdepth 1 -name "*.deb")" ]; then
-            echo "❌ Ошибка: .deb пакеты не найдены!"
+            echo "❌ Error: .deb packages not found!"
             exit 1
           fi
           
-          echo "📦 Собранные пакеты:"
+          echo "📦 Built packages:"
           ls -lh debs/
 
       - name: Build meta package (linux-image-zerocd)
         run: |
           set -e
-          # Ищем файл через find (чтобы ls не ронял CI в случае чего)
+          # Find file using find (to avoid ls failures in CI)
           PKG_FILE=$(find debs -maxdepth 1 -name "linux-image-*.deb" | head -n 1)
           
           if [ -z "$PKG_FILE" ]; then
-            echo "❌ Ошибка: пакет linux-image не найден!"
+            echo "❌ Error: linux-image package not found!"
             exit 1
           fi
           
-          # Надежный способ получить чистое имя пакета без версий и подчеркиваний
+          # Get package name and version
           REAL_PKG_NAME=$(dpkg-deb -f "$PKG_FILE" Package)
-          echo "✅ Зависимость будет: $REAL_PKG_NAME"
+          PKG_VERSION=$(dpkg-deb -f "$PKG_FILE" Version)
+          echo "✅ Dependency: $REAL_PKG_NAME (= $PKG_VERSION)"
 
           mkdir -p meta/DEBIAN
+          
+          # Create postinst script to install kernel to boot firmware
+          cat > meta/DEBIAN/postinst <<'POSTINST_EOF'
+          #!/bin/bash
+          set -e
+          
+          # Find latest installed ZeroCD kernel
+          KERNEL=$(ls -t /boot/vmlinuz-*-zerocd* 2>/dev/null | head -n 1)
+          INITRD=$(ls -t /boot/initrd.img-*-zerocd* 2>/dev/null | head -n 1)
+          
+          if [ -z "$KERNEL" ] || [ -z "$INITRD" ]; then
+            echo "⚠️  ZeroCD kernel not found in /boot, skipping firmware installation"
+            exit 0
+          fi
+          
+          # Create firmware directory if it doesn't exist
+          mkdir -p /boot/firmware
+          
+          # Copy kernel and initrd
+          cp "$KERNEL" /boot/firmware/kernel8.img
+          cp "$INITRD" /boot/firmware/initramfs8
+          
+          echo "✅ Kernel installed to /boot/firmware:"
+          echo "   kernel8.img: $KERNEL"
+          echo "   initramfs8: $INITRD"
+          
+          # Remove all stock kernels to save space
+          echo "🗑️  Removing stock kernels..."
+          apt-get remove -y --allow-remove-essential \
+            linux-image-rpi \
+            linux-image-rpi-2712 \
+            linux-headers-rpi \
+            linux-headers-rpi-2712 \
+            linux-image-5.* \
+            linux-image-6.* \
+            linux-headers-5.* \
+            linux-headers-6.* \
+            2>/dev/null || true
+          
+          # Purge and cleanup
+          apt-get purge -y 'linux-image-*' 'linux-headers-*' 2>/dev/null || true
+          apt-get autoremove -y --purge 2>/dev/null || true
+          apt-get clean
+          
+          echo "✅ Stock kernels removed, system cleaned"
+          echo "📋 Please reboot to apply the new kernel."
+          POSTINST_EOF
+          chmod 755 meta/DEBIAN/postinst
+          
           cat > meta/DEBIAN/control <<EOF
           Package: linux-image-zerocd
           Version: 1.0
@@ -168,9 +218,10 @@ jobs:
           Priority: optional
           Architecture: arm64
           Maintainer: Sergey004
-          Depends: $REAL_PKG_NAME
+          Depends: $REAL_PKG_NAME (= $PKG_VERSION)
           Description: ZeroCD kernel meta package
             This package always depends on the latest ZeroCD kernel.
+            Automatically installs kernel to /boot/firmware on Raspberry Pi.
           EOF
 
           dpkg-deb --build meta linux-image-zerocd_1.0_arm64.deb
@@ -182,12 +233,14 @@ jobs:
           PKG_FILE=$(find debs -maxdepth 1 -name "linux-headers-*.deb" | head -n 1)
           
           if [ -z "$PKG_FILE" ]; then
-            echo "❌ Ошибка: пакет linux-headers не найден!"
+            echo "❌ Error: linux-headers package not found!"
             exit 1
           fi
           
+          # Get package name and version
           REAL_PKG_NAME=$(dpkg-deb -f "$PKG_FILE" Package)
-          echo "✅ Зависимость будет: $REAL_PKG_NAME"
+          PKG_VERSION=$(dpkg-deb -f "$PKG_FILE" Version)
+          echo "✅ Dependency: $REAL_PKG_NAME (= $PKG_VERSION)"
 
           mkdir -p meta2/DEBIAN
           cat > meta2/DEBIAN/control <<EOF
@@ -197,7 +250,7 @@ jobs:
           Priority: optional
           Architecture: arm64
           Maintainer: Sergey004
-          Depends: $REAL_PKG_NAME
+          Depends: $REAL_PKG_NAME (= $PKG_VERSION)
           Description: ZeroCD kernel headers meta package
             This package always depends on the latest ZeroCD kernel headers.
           EOF
@@ -211,7 +264,7 @@ jobs:
           echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --import
           FP=$(gpg --list-secret-keys --with-colons | grep '^fpr' | head -1 | cut -d: -f10)
           if [ -z "$FP" ]; then
-            echo "❌ Ошибка: GPG ключ не найден!"
+            echo "❌ Error: GPG key not found!"
             exit 1
           fi
           echo "GPG_FP=$FP" >> $GITHUB_ENV
@@ -234,7 +287,7 @@ jobs:
           gzip -9c dists/stable/main/binary-arm64/Packages \
             > dists/stable/main/binary-arm64/Packages.gz
 
-          echo "✅ Packages index создан"
+          echo "✅ Packages index generated"
 
       - name: Generate Release file
         run: |
@@ -251,7 +304,7 @@ jobs:
             -o APT::FTPArchive::Release::Description="ZeroCD Custom Raspberry Pi Kernel" \
             release . > Release
 
-          echo "✅ Release файл создан"
+          echo "✅ Release file created"
 
       - name: Sign Release with GPG
         run: |
@@ -272,7 +325,7 @@ jobs:
               --detach-sign --armor \
               -o Release.gpg Release
 
-          echo "✅ Release подписан"
+          echo "✅ Release signed"
 
       - name: Export public GPG key
         run: |
@@ -293,32 +346,32 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add -A
           
-          # Проверка что есть изменения перед коммитом
+          # Check if there are changes before commit
           if ! git diff --cached --quiet; then
             git commit -m "kernel: rpi-6.12.y@${{ needs.check.outputs.sha_short }}"
           else
-            echo "⚠️  Нет изменений для коммита"
+            echo "⚠️  No changes to commit"
           fi
           
-          # Попытка push с проверкой ошибок
+          # Attempt push with error checking
           if ! git push 2>&1; then
-            echo "❌ Ошибка: не удалось отправить изменения!"
+            echo "❌ Error: failed to push changes!"
             git log --oneline -1
             exit 1
           fi
-          echo "✅ Изменения отправлены успешно"
+          echo "✅ Changes pushed successfully"
 
       - name: Summary
         run: |
           set -e
-          echo "## ✅ Сборка завершена" >> $GITHUB_STEP_SUMMARY
+          echo "## ✅ Build completed" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| | |" >> $GITHUB_STEP_SUMMARY
           echo "|---|---|" >> $GITHUB_STEP_SUMMARY
           echo "| Upstream SHA | \`${{ needs.check.outputs.sha }}\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| Ветка | rpi-6.12.y |" >> $GITHUB_STEP_SUMMARY
+          echo "| Branch | rpi-6.12.y |" >> $GITHUB_STEP_SUMMARY
           echo "| defconfig | bcm2711_defconfig |" >> $GITHUB_STEP_SUMMARY
           echo "| LOCALVERSION | -zerocd+ |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Пакеты:" >> $GITHUB_STEP_SUMMARY
+          echo "### Packages:" >> $GITHUB_STEP_SUMMARY
           ls debs/*.deb | xargs -I{} basename {} | sed 's/^/- `/' | sed 's/$/`/' >> $GITHUB_STEP_SUMMARY
