@@ -92,12 +92,11 @@ jobs:
       - name: Clone raspberrypi/linux (rpi-6.12.y)
         run: |
           set -e
-          git clone --depth=1 \
+          git clone \
             -b rpi-6.12.y \
             https://github.com/raspberrypi/linux \
             kernel-src
           cd kernel-src
-          git fetch --depth=100 origin c1924e0
           git checkout c1924e0
           echo "✅ Checked out commit: $(git log --oneline -1)"
 
