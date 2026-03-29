@@ -112,7 +112,7 @@ jobs:
 
           make \
             KERNEL=kernel8 \
-            LOCALVERSION=v8-zerocd+ \
+            LOCALVERSION=-zerocd+ \
             -j$(nproc) \
             bindeb-pkg
 
