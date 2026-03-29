@@ -2,13 +2,13 @@ Package: linux-headers-6.12.79-v8-zerocd+
 Source: linux-upstream
 Version: 6.12.79-g5f23da14d91d-1
 Architecture: arm64
-Maintainer: runner <runner@runnervm6gd1v.slpgi5tgzysu3iv5utwuty4cug.ex.internal.cloudapp.net>
+Maintainer: runner <runner@runnervm6gd1v.npf0p225mkrenglw3n0laovr5b.xx.internal.cloudapp.net>
 Installed-Size: 50893
 Filename: pool/main/linux-headers-6.12.79-v8-zerocd+_6.12.79-g5f23da14d91d-1_arm64.deb
-Size: 8833702
-MD5sum: 167f807b22337217530b7635854f6943
-SHA1: 1c16924ee97a84f982d51a759583147722e0aa07
-SHA256: 0e7ac66fb47e11f5d8ca1eed8ce25cc9143c6a3d5f3a13fe7f072227c98fdd73
+Size: 8834232
+MD5sum: 0dd616e6a1cf74ebfc345920eae468c7
+SHA1: bb574fe505ce4feb159f7ca9b058a1215dd4440f
+SHA256: 2ce8b18c9664e6af5bd99700ca365149187a84e70007d58b633d83ef2408e9c6
 Section: kernel
 Priority: optional
 Homepage: https://www.kernel.org/
@@ -21,12 +21,12 @@ Package: linux-headers-zerocd
 Version: 1.0
 Architecture: arm64
 Maintainer: Sergey004
-Depends: linux-headers-6.12.79-v8-zerocd+
+Depends: linux-headers-6.12.79-v8-zerocd+ (= 6.12.79-g5f23da14d91d-1)
 Filename: pool/main/linux-headers-zerocd_1.0_arm64.deb
-Size: 550
-MD5sum: aab88d0cf084a152d985f11909cff642
-SHA1: 2d1c8599245bc250e97074799b4267925c73aa91
-SHA256: 2c6eb03188a47d84ed2d68f7c0cfe878e4f282f576c46790d7e9343d9c6d6959
+Size: 578
+MD5sum: e38a1ce9c5623ec3e8acfb077e7bbc0b
+SHA1: f0a44b5e8292a4907cbaed4dd29c8bb38c6b619a
+SHA256: 8e77c5c35b282f3d18e46d0886ccc88093d6e37daf94c8c32cbf283618ec6759
 Section: kernel
 Priority: optional
 Description: ZeroCD kernel headers meta package
@@ -36,13 +36,13 @@ Package: linux-image-6.12.79-v8-zerocd+
 Source: linux-upstream
 Version: 6.12.79-g5f23da14d91d-1
 Architecture: arm64
-Maintainer: runner <runner@runnervm6gd1v.slpgi5tgzysu3iv5utwuty4cug.ex.internal.cloudapp.net>
+Maintainer: runner <runner@runnervm6gd1v.npf0p225mkrenglw3n0laovr5b.xx.internal.cloudapp.net>
 Installed-Size: 41874
 Filename: pool/main/linux-image-6.12.79-v8-zerocd+_6.12.79-g5f23da14d91d-1_arm64.deb
-Size: 32719742
-MD5sum: 9c44e163fd09d8508aa33733d05be86c
-SHA1: e57be1ec67493a4956fb0393abdc1645060f67b9
-SHA256: 274b0ac67d7688aeed1f5b10bb00391d74f604ce09b629c2a5d0478f7449bb47
+Size: 32710648
+MD5sum: 742c2bca63373c73985c2cdd9d8db27e
+SHA1: 07e285ccabd747f74b1d1fb8b18b660ed0c57abb
+SHA256: 52ee64693c830a785d1ddc58196bd16a769ea2627d3898ee31ac51903d831f19
 Section: kernel
 Priority: optional
 Homepage: https://www.kernel.org/
@@ -54,29 +54,30 @@ Package: linux-image-zerocd
 Version: 1.0
 Architecture: arm64
 Maintainer: Sergey004
-Depends: linux-image-6.12.79-v8-zerocd+
+Depends: linux-image-6.12.79-v8-zerocd+ (= 6.12.79-g5f23da14d91d-1)
 Filename: pool/main/linux-image-zerocd_1.0_arm64.deb
-Size: 546
-MD5sum: 7568b1f10f5214ee98b04fb774c810a1
-SHA1: 69b595dc24970f10aad8cf5db84d4eb9dcd4330f
-SHA256: e10e97dbffc49875330a434ff4147dcbbaf92a734384b38c437284b4f94331b6
+Size: 1154
+MD5sum: 47d16da0380627605318aa871f5e9216
+SHA1: a548f45d32fc5fe66d1be9625c810b0f61e839be
+SHA256: fe3675515155e40b7a062f5d5a835a1ffcc88709fe179b13a141fec94f5a413b
 Section: kernel
 Priority: optional
 Description: ZeroCD kernel meta package
   This package always depends on the latest ZeroCD kernel.
+  Automatically installs kernel to /boot/firmware on Raspberry Pi.
 
 Package: linux-libc-dev
 Source: linux-upstream
 Version: 6.12.79-g5f23da14d91d-1
 Architecture: arm64
-Maintainer: runner <runner@runnervm6gd1v.slpgi5tgzysu3iv5utwuty4cug.ex.internal.cloudapp.net>
+Maintainer: runner <runner@runnervm6gd1v.npf0p225mkrenglw3n0laovr5b.xx.internal.cloudapp.net>
 Installed-Size: 7082
 Provides: linux-kernel-headers
 Filename: pool/main/linux-libc-dev_6.12.79-g5f23da14d91d-1_arm64.deb
-Size: 1420184
-MD5sum: e4b5e07b4518348d7f6a31e434056371
-SHA1: 53e2a4720964071179cf99bcddd3641174e56e8f
-SHA256: 269299775d736c8f9e618babfc8884c1155267343c0da2cdfaa8b15def03d7b8
+Size: 1420008
+MD5sum: 15fbb69210e964bf9c428db184d7e490
+SHA1: bf74d03d01ea4db8961d47b2b2d1ae937d59ff80
+SHA256: 79dbdf1475567c537cdfe0b6674eaf205ed2cc43e73b9c3db68d3280528e357a
 Section: devel
 Priority: optional
 Multi-Arch: same
