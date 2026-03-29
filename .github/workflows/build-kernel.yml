@@ -115,7 +115,7 @@ jobs:
             LOCALVERSION=-zerocd+ \
             -j$(nproc) \
             bindeb-pkg
-
+          mkdir -p debs
           echo "✅ Сборка завершена"
 
       - name: Build meta package (linux-image-zerocd)
@@ -160,7 +160,7 @@ jobs:
 
       - name: Collect .deb packages
         run: |
-          mkdir -p debs
+          
           # bindeb-pkg кладёт .deb в родительскую папку (рядом с kernel-src)
           mv *.deb debs/ 2>/dev/null || true
           echo "📦 Собранные пакеты:"
