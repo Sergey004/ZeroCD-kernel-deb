@@ -37,7 +37,7 @@ jobs:
       - name: Check if this SHA was already built
         id: check
         run: |
-          if [ -f apt-repo/.last_built_sha ]; then
+          if[ -f apt-repo/.last_built_sha ]; then
             LAST=$(cat apt-repo/.last_built_sha)
             if [ "$LAST" = "${{ steps.upstream.outputs.sha }}" ]; then
               echo "skip=true" >> $GITHUB_OUTPUT
@@ -118,25 +118,16 @@ jobs:
 
           echo "✅ Сборка завершена"
 
-
-      - name: Collect .deb packages
-        run: |
-          mkdir -p debs
-          # bindeb-pkg кладёт .deb в родительскую папку (рядом с kernel-src)
-          mv *.deb debs/ 2>/dev/null || true
-          echo "📦 Собранные пакеты:"
-          ls -lh debs/
-
       - name: Collect .deb packages
         run: |
           mkdir -p debs
           
-          # Собираем пакеты как из корня (на всякий случай), так и из kernel-src/
-          mv *.deb debs/ 2>/dev/null || true
-          mv kernel-src/*.deb debs/ 2>/dev/null || true
+          # Ищем собранные .deb пакеты в текущей папке и внутри kernel-src
+          # и перемещаем их в папку debs/
+          find . -maxdepth 2 -name "*.deb" -not -path "./debs/*" -exec mv {} debs/ \;
           
-          # Защита от тихих ошибок: проверяем, что папка не пуста
-          if[ -z "$(ls -A debs/ 2>/dev/null)" ]; then
+          # Проверяем, что папка не пуста (добавлен пробел после if и скобок!)
+          if [ -z "$(ls -A debs/ 2>/dev/null)" ]; then
             echo "❌ Ошибка: .deb пакеты не найдены после сборки ядра!"
             exit 1
           fi
@@ -146,14 +137,14 @@ jobs:
 
       - name: Build meta package (linux-image-zerocd)
         run: |
-          # Берем первый попавшийся пакет linux-image
+          # Находим точный файл образа ядра
           PKG_FILE=$(ls debs/linux-image-*.deb | head -n 1)
-          if[ -z "$PKG_FILE" ]; then
+          if [ -z "$PKG_FILE" ]; then
             echo "❌ Ошибка: базовый пакет linux-image не найден!"
             exit 1
           fi
           
-          # Надежный способ получить точное имя пакета (без версии и подчеркиваний)
+          # Получаем чистое имя пакета без версии для зависимости
           REAL_PKG_NAME=$(dpkg-deb -f "$PKG_FILE" Package)
           echo "✅ Зависимость будет установлена на: $REAL_PKG_NAME"
 
@@ -175,7 +166,7 @@ jobs:
 
       - name: Build meta package (linux-headers-zerocd)
         run: |
-          # Аналогично для headers
+          # Находим точный файл хедеров
           PKG_FILE=$(ls debs/linux-headers-*.deb | head -n 1)
           if [ -z "$PKG_FILE" ]; then
             echo "❌ Ошибка: пакет linux-headers не найден!"
@@ -200,7 +191,6 @@ jobs:
 
           dpkg-deb --build meta2 linux-headers-zerocd_1.0_arm64.deb
           mv linux-headers-zerocd_1.0_arm64.deb debs/
-
 
       - name: Import GPG key
         run: |
