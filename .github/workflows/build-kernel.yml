@@ -78,9 +78,11 @@ jobs:
             gcc-aarch64-linux-gnu \
             bc bison flex \
             libssl-dev libelf-dev \
+            build-essential \
             crossbuild-essential-arm64 \
-            make dpkg-dev apt-utils gnupg \
-            rsync
+            debhelper \
+            dpkg-dev apt-utils gnupg \
+            make rsync
 
       - name: Clone raspberrypi/linux (rpi-6.12.y)
         run: |
@@ -208,7 +210,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add -A
           git commit -m "kernel: rpi-6.12.y@${{ needs.check.outputs.sha_short }}"
-          git pushZero
+          git push
 
       - name: Summary
         run: |
