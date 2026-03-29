@@ -82,7 +82,11 @@ jobs:
             crossbuild-essential-arm64 \
             debhelper \
             dpkg-dev apt-utils gnupg \
-            make rsync
+            make rsync packaging-dev \
+          sudo dpkg --add-architecture arm64
+          sudo apt update
+          sudo apt install libssl-dev:arm64
+            
 
       - name: Clone raspberrypi/linux (rpi-6.12.y)
         run: |
