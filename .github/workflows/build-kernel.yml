@@ -21,7 +21,12 @@ jobs:
       - name: Get latest commit from raspberrypi/linux
         id: upstream
         run: |
+          set -e
           SHA=$(git ls-remote https://github.com/raspberrypi/linux refs/heads/rpi-6.12.y | cut -f1)
+          if [ -z "$SHA" ]; then
+            echo "❌ Ошибка: не удалось получить SHA из репозитория!"
+            exit 1
+          fi
           echo "sha=$SHA" >> $GITHUB_OUTPUT
           echo "sha_short=${SHA:0:8}" >> $GITHUB_OUTPUT
 
@@ -37,7 +42,8 @@ jobs:
       - name: Check if this SHA was already built
         id: check
         run: |
-          if[ -f apt-repo/.last_built_sha ]; then
+          set -e
+          if [ -f apt-repo/.last_built_sha ]; then
             LAST=$(cat apt-repo/.last_built_sha)
             if [ "$LAST" = "${{ steps.upstream.outputs.sha }}" ]; then
               echo "skip=true" >> $GITHUB_OUTPUT
@@ -73,6 +79,7 @@ jobs:
 
       - name: Install build dependencies
         run: |
+          set -e
           sudo apt-get update
           sudo apt-get install -y \
             bc bison flex \
@@ -84,6 +91,7 @@ jobs:
 
       - name: Clone raspberrypi/linux (rpi-6.12.y)
         run: |
+          set -e
           git clone --depth=1 \
             -b rpi-6.12.y \
             https://github.com/raspberrypi/linux \
@@ -92,6 +100,7 @@ jobs:
 
       - name: Apply patches
         run: |
+          set -e
           cd kernel-src
           PATCHES=$(ls ../repo/patches/00-*.patch 2>/dev/null || true)
           if [ -z "$PATCHES" ]; then
@@ -106,6 +115,7 @@ jobs:
 
       - name: Build kernel (bcm2711_defconfig, bindeb-pkg)
         run: |
+          set -e
           cd kernel-src
 
           make bcm2711_defconfig
@@ -120,17 +130,24 @@ jobs:
 
       - name: Collect .deb packages
         run: |
+          set -e
           mkdir -p debs
           
-          # Безопасный поиск и перенос .deb файлов (не роняет скрипт при ошибке)
-          # Забирает пакеты отовсюду, исключая саму папку debs/
+          # Безопасный поиск и перенос .deb файлов
           find . -maxdepth 2 -type f -name "*.deb" -not -path "./debs/*" -exec mv {} debs/ \;
+          
+          # Проверка что пакеты найдены
+          if [ -z "$(find debs -maxdepth 1 -name "*.deb")" ]; then
+            echo "❌ Ошибка: .deb пакеты не найдены!"
+            exit 1
+          fi
           
           echo "📦 Собранные пакеты:"
           ls -lh debs/
 
       - name: Build meta package (linux-image-zerocd)
         run: |
+          set -e
           # Ищем файл через find (чтобы ls не ронял CI в случае чего)
           PKG_FILE=$(find debs -maxdepth 1 -name "linux-image-*.deb" | head -n 1)
           
@@ -161,6 +178,7 @@ jobs:
 
       - name: Build meta package (linux-headers-zerocd)
         run: |
+          set -e
           PKG_FILE=$(find debs -maxdepth 1 -name "linux-headers-*.deb" | head -n 1)
           
           if [ -z "$PKG_FILE" ]; then
@@ -189,17 +207,24 @@ jobs:
 
       - name: Import GPG key
         run: |
+          set -e
           echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --import
           FP=$(gpg --list-secret-keys --with-colons | grep '^fpr' | head -1 | cut -d: -f10)
+          if [ -z "$FP" ]; then
+            echo "❌ Ошибка: GPG ключ не найден!"
+            exit 1
+          fi
           echo "GPG_FP=$FP" >> $GITHUB_ENV
 
       - name: Add .deb packages to APT repo pool
         run: |
+          set -e
           mkdir -p apt-repo/pool/main
           cp debs/*.deb apt-repo/pool/main/
 
       - name: Generate Packages index
         run: |
+          set -e
           cd apt-repo
           mkdir -p dists/stable/main/binary-arm64
 
@@ -213,6 +238,7 @@ jobs:
 
       - name: Generate Release file
         run: |
+          set -e
           cd apt-repo/dists/stable
 
           apt-ftparchive \
@@ -229,6 +255,7 @@ jobs:
 
       - name: Sign Release with GPG
         run: |
+          set -e
           cd apt-repo/dists/stable
 
           gpg --batch --yes \
@@ -249,24 +276,41 @@ jobs:
 
       - name: Export public GPG key
         run: |
+          set -e
           gpg --armor --export "$GPG_FP" \
             > apt-repo/zerocd-kernel.gpg.key
 
       - name: Save built SHA
         run: |
+          set -e
           echo "${{ needs.check.outputs.sha }}" > apt-repo/.last_built_sha
 
       - name: Commit and push APT repo
         run: |
+          set -e
           cd apt-repo
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add -A
-          git commit -m "kernel: rpi-6.12.y@${{ needs.check.outputs.sha_short }}"
-          git push
+          
+          # Проверка что есть изменения перед коммитом
+          if ! git diff --cached --quiet; then
+            git commit -m "kernel: rpi-6.12.y@${{ needs.check.outputs.sha_short }}"
+          else
+            echo "⚠️  Нет изменений для коммита"
+          fi
+          
+          # Попытка push с проверкой ошибок
+          if ! git push 2>&1; then
+            echo "❌ Ошибка: не удалось отправить изменения!"
+            git log --oneline -1
+            exit 1
+          fi
+          echo "✅ Изменения отправлены успешно"
 
       - name: Summary
         run: |
+          set -e
           echo "## ✅ Сборка завершена" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| | |" >> $GITHUB_STEP_SUMMARY
@@ -274,7 +318,7 @@ jobs:
           echo "| Upstream SHA | \`${{ needs.check.outputs.sha }}\` |" >> $GITHUB_STEP_SUMMARY
           echo "| Ветка | rpi-6.12.y |" >> $GITHUB_STEP_SUMMARY
           echo "| defconfig | bcm2711_defconfig |" >> $GITHUB_STEP_SUMMARY
-          echo "| LOCALVERSION | v8-zerocd+ |" >> $GITHUB_STEP_SUMMARY
+          echo "| LOCALVERSION | -zerocd+ |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Пакеты:" >> $GITHUB_STEP_SUMMARY
           ls debs/*.deb | xargs -I{} basename {} | sed 's/^/- `/' | sed 's/$/`/' >> $GITHUB_STEP_SUMMARY
