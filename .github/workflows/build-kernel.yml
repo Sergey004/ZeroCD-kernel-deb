@@ -127,9 +127,35 @@ jobs:
           echo "📦 Собранные пакеты:"
           ls -lh debs/
 
+      - name: Collect .deb packages
+        run: |
+          mkdir -p debs
+          
+          # Собираем пакеты как из корня (на всякий случай), так и из kernel-src/
+          mv *.deb debs/ 2>/dev/null || true
+          mv kernel-src/*.deb debs/ 2>/dev/null || true
+          
+          # Защита от тихих ошибок: проверяем, что папка не пуста
+          if[ -z "$(ls -A debs/ 2>/dev/null)" ]; then
+            echo "❌ Ошибка: .deb пакеты не найдены после сборки ядра!"
+            exit 1
+          fi
+          
+          echo "📦 Собранные пакеты:"
+          ls -lh debs/
+
       - name: Build meta package (linux-image-zerocd)
         run: |
-          KVER=$(ls debs/linux-image-*.deb | sed -E 's/.*linux-image-([0-9\.\-v8\+a-zA-Z0-9]+)_arm64.deb/\1/')
+          # Берем первый попавшийся пакет linux-image
+          PKG_FILE=$(ls debs/linux-image-*.deb | head -n 1)
+          if[ -z "$PKG_FILE" ]; then
+            echo "❌ Ошибка: базовый пакет linux-image не найден!"
+            exit 1
+          fi
+          
+          # Надежный способ получить точное имя пакета (без версии и подчеркиваний)
+          REAL_PKG_NAME=$(dpkg-deb -f "$PKG_FILE" Package)
+          echo "✅ Зависимость будет установлена на: $REAL_PKG_NAME"
 
           mkdir -p meta/DEBIAN
           cat > meta/DEBIAN/control <<EOF
@@ -139,7 +165,7 @@ jobs:
           Priority: optional
           Architecture: arm64
           Maintainer: Sergey004
-          Depends: linux-image-$KVER
+          Depends: $REAL_PKG_NAME
           Description: ZeroCD kernel meta package
             This package always depends on the latest ZeroCD kernel.
           EOF
@@ -149,7 +175,15 @@ jobs:
 
       - name: Build meta package (linux-headers-zerocd)
         run: |
-          KVER=$(ls debs/linux-headers-*.deb | sed -E 's/.*linux-headers-([0-9\.\-v8\+a-zA-Z0-9]+)_arm64.deb/\1/')
+          # Аналогично для headers
+          PKG_FILE=$(ls debs/linux-headers-*.deb | head -n 1)
+          if [ -z "$PKG_FILE" ]; then
+            echo "❌ Ошибка: пакет linux-headers не найден!"
+            exit 1
+          fi
+          
+          REAL_PKG_NAME=$(dpkg-deb -f "$PKG_FILE" Package)
+          echo "✅ Зависимость будет установлена на: $REAL_PKG_NAME"
 
           mkdir -p meta2/DEBIAN
           cat > meta2/DEBIAN/control <<EOF
@@ -159,7 +193,7 @@ jobs:
           Priority: optional
           Architecture: arm64
           Maintainer: Sergey004
-          Depends: linux-headers-$KVER
+          Depends: $REAL_PKG_NAME
           Description: ZeroCD kernel headers meta package
             This package always depends on the latest ZeroCD kernel headers.
           EOF
