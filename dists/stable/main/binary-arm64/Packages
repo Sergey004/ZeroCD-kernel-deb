@@ -2,13 +2,13 @@ Package: linux-headers-6.12.79-v8-zerocd+
 Source: linux-upstream
 Version: 6.12.79-g5f23da14d91d-1
 Architecture: arm64
-Maintainer: runner <runner@runnervm6gd1v.a1lyoruecvheznucl1zdg3qqff.ex.internal.cloudapp.net>
+Maintainer: runner <runner@runnervm6gd1v.slpgi5tgzysu3iv5utwuty4cug.ex.internal.cloudapp.net>
 Installed-Size: 50893
 Filename: pool/main/linux-headers-6.12.79-v8-zerocd+_6.12.79-g5f23da14d91d-1_arm64.deb
-Size: 8833758
-MD5sum: b2baa0f89c24afb05526edb89276e499
-SHA1: 25f1a498bce867b960917616ed48f0e2f8031c37
-SHA256: b2e28210614d26c9895049aa3da3f96cd0b3c9cf1409c21d705f0596c4133363
+Size: 8833702
+MD5sum: 167f807b22337217530b7635854f6943
+SHA1: 1c16924ee97a84f982d51a759583147722e0aa07
+SHA256: 0e7ac66fb47e11f5d8ca1eed8ce25cc9143c6a3d5f3a13fe7f072227c98fdd73
 Section: kernel
 Priority: optional
 Homepage: https://www.kernel.org/
@@ -17,17 +17,32 @@ Description: Linux kernel headers for 6.12.79-v8-zerocd+ on arm64
  .
  This is useful for people who need to build external modules
 
+Package: linux-headers-zerocd
+Version: 1.0
+Architecture: arm64
+Maintainer: Sergey004
+Depends: linux-headers-6.12.79-v8-zerocd+
+Filename: pool/main/linux-headers-zerocd_1.0_arm64.deb
+Size: 550
+MD5sum: aab88d0cf084a152d985f11909cff642
+SHA1: 2d1c8599245bc250e97074799b4267925c73aa91
+SHA256: 2c6eb03188a47d84ed2d68f7c0cfe878e4f282f576c46790d7e9343d9c6d6959
+Section: kernel
+Priority: optional
+Description: ZeroCD kernel headers meta package
+  This package always depends on the latest ZeroCD kernel headers.
+
 Package: linux-image-6.12.79-v8-zerocd+
 Source: linux-upstream
 Version: 6.12.79-g5f23da14d91d-1
 Architecture: arm64
-Maintainer: runner <runner@runnervm6gd1v.a1lyoruecvheznucl1zdg3qqff.ex.internal.cloudapp.net>
+Maintainer: runner <runner@runnervm6gd1v.slpgi5tgzysu3iv5utwuty4cug.ex.internal.cloudapp.net>
 Installed-Size: 41874
 Filename: pool/main/linux-image-6.12.79-v8-zerocd+_6.12.79-g5f23da14d91d-1_arm64.deb
-Size: 32719472
-MD5sum: b637a9c4976fa3c7006c8bd6b84d7a2e
-SHA1: f0bd08a449cbed27afe6d15e67590d3c76d194c1
-SHA256: 269ca5b0ae40f84d33620816106fd02f5459cc5bc8a057ff362ebf06c1eb6a43
+Size: 32719742
+MD5sum: 9c44e163fd09d8508aa33733d05be86c
+SHA1: e57be1ec67493a4956fb0393abdc1645060f67b9
+SHA256: 274b0ac67d7688aeed1f5b10bb00391d74f604ce09b629c2a5d0478f7449bb47
 Section: kernel
 Priority: optional
 Homepage: https://www.kernel.org/
@@ -35,18 +50,33 @@ Description: Linux kernel, version 6.12.79-v8-zerocd+
  This package contains the Linux kernel, modules and corresponding other
  files, version: 6.12.79-v8-zerocd+.
 
+Package: linux-image-zerocd
+Version: 1.0
+Architecture: arm64
+Maintainer: Sergey004
+Depends: linux-image-6.12.79-v8-zerocd+
+Filename: pool/main/linux-image-zerocd_1.0_arm64.deb
+Size: 546
+MD5sum: 7568b1f10f5214ee98b04fb774c810a1
+SHA1: 69b595dc24970f10aad8cf5db84d4eb9dcd4330f
+SHA256: e10e97dbffc49875330a434ff4147dcbbaf92a734384b38c437284b4f94331b6
+Section: kernel
+Priority: optional
+Description: ZeroCD kernel meta package
+  This package always depends on the latest ZeroCD kernel.
+
 Package: linux-libc-dev
 Source: linux-upstream
 Version: 6.12.79-g5f23da14d91d-1
 Architecture: arm64
-Maintainer: runner <runner@runnervm6gd1v.a1lyoruecvheznucl1zdg3qqff.ex.internal.cloudapp.net>
+Maintainer: runner <runner@runnervm6gd1v.slpgi5tgzysu3iv5utwuty4cug.ex.internal.cloudapp.net>
 Installed-Size: 7082
 Provides: linux-kernel-headers
 Filename: pool/main/linux-libc-dev_6.12.79-g5f23da14d91d-1_arm64.deb
-Size: 1419722
-MD5sum: 94702e6d300e14cef168c91cb84e5bcb
-SHA1: 8e5dcd79a357e9e550897a7a757b4c98ae7e3122
-SHA256: 6e5ea95a7f837f7156b8f734268b77c6dcacae6c93611d8f71b2984c722a9db5
+Size: 1420184
+MD5sum: e4b5e07b4518348d7f6a31e434056371
+SHA1: 53e2a4720964071179cf99bcddd3641174e56e8f
+SHA256: 269299775d736c8f9e618babfc8884c1155267343c0da2cdfaa8b15def03d7b8
 Section: devel
 Priority: optional
 Multi-Arch: same
