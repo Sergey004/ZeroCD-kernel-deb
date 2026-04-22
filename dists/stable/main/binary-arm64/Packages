@@ -2,13 +2,13 @@ Package: linux-headers-6.12.75-v8-zerocd+
 Source: linux-upstream
 Version: 6.12.75-g47d9548fdf3c-1
 Architecture: arm64
-Maintainer: runner <runner@runnervm6gd1v>
+Maintainer: runner <runner@runnervm6gd1v.ww3fxjpxopae5iu41fpnyzhw2d.cx.internal.cloudapp.net>
 Installed-Size: 50882
 Filename: pool/main/linux-headers-6.12.75-v8-zerocd+_6.12.75-g47d9548fdf3c-1_arm64.deb
-Size: 8832004
-MD5sum: 8da7a1d7ba0af789c4ac1d353747e503
-SHA1: ada6d624b6019364332efee93aaa7655b4e3c153
-SHA256: c859938aaeca8a7cbadb3a33ed9412d3c0c4bf3d18f2269b0ef15bb0e975a62b
+Size: 8831484
+MD5sum: a21ba57393b8d7c4ba1be9927c044cc2
+SHA1: ad39f96291df8f1f001dcaf440028ba4c856248e
+SHA256: f1fde4ddd5576d3aec041ccef78a8ab157365b511715949a82d9e6f05a5177ef
 Section: kernel
 Priority: optional
 Homepage: https://www.kernel.org/
@@ -24,9 +24,9 @@ Maintainer: Sergey004
 Depends: linux-headers-6.12.75-v8-zerocd+ (>= 6.12.75-g47d9548fdf3c-1)
 Filename: pool/main/linux-headers-zerocd_1.0_arm64.deb
 Size: 578
-MD5sum: 65a7d941a9e6c4a5849217af673f5dbd
-SHA1: 3a647ca20bc47b1db80a62bf3966cea9ec1c9f23
-SHA256: 2df09bcc21e9ea53815868757b8a76210d567de8897e690d47b200d14080184f
+MD5sum: 9c21b2935de7f07b62c8a5728bbe3ec3
+SHA1: 6de8dadd38ec53f8a616e9b1ab5e737d0f9565f7
+SHA256: 45a48ac364755b0b4f4771f0e4e7c952f96b082e7b201bc4346001fe7ceebfe7
 Section: kernel
 Priority: optional
 Description: ZeroCD kernel headers meta package
@@ -36,13 +36,13 @@ Package: linux-image-6.12.75-v8-zerocd+
 Source: linux-upstream
 Version: 6.12.75-g47d9548fdf3c-1
 Architecture: arm64
-Maintainer: runner <runner@runnervm6gd1v>
+Maintainer: runner <runner@runnervm6gd1v.ww3fxjpxopae5iu41fpnyzhw2d.cx.internal.cloudapp.net>
 Installed-Size: 41869
 Filename: pool/main/linux-image-6.12.75-v8-zerocd+_6.12.75-g47d9548fdf3c-1_arm64.deb
-Size: 32715708
-MD5sum: 744aa0ca032b6dfd7b2e95bf0a5aeb42
-SHA1: 51913927ffaca968254b10d0dba3f2b00e78dc4b
-SHA256: 1cb29e2b57c609669d3b5b7ec7ee2dff10ba1249e6b3e32eb850bce0dff9ae83
+Size: 32714878
+MD5sum: 92862e036a4c339a69f7dcd300028448
+SHA1: 4f25de941a07bd668c04235987cca7c51d7e8787
+SHA256: 2c8dc9569d6ddef780d5a58a38c233f7e22269e10781c50a2deb1b76cb1c7f7d
 Section: kernel
 Priority: optional
 Homepage: https://www.kernel.org/
@@ -57,9 +57,9 @@ Maintainer: Sergey004
 Depends: linux-image-6.12.75-v8-zerocd+ (>= 6.12.75-g47d9548fdf3c-1)
 Filename: pool/main/linux-image-zerocd_1.0_arm64.deb
 Size: 978
-MD5sum: 16716868a52291acd18c0a540869b9b8
-SHA1: edde40004f6608427ecef426ed4807de3a8bfffd
-SHA256: b1e5e87ebe4b3e46ef384a7ffe183176eae7f9ea22b499e6fb1309f92bcae001
+MD5sum: 851b875ce401dcec6cd9e0bef2e973e1
+SHA1: 72f457eed41f48e668105dffccf1706d01b5e434
+SHA256: 3b412af4992c2aac70c836c2ffe2c63164ac7040d2f926629357835a1cbe4945
 Section: kernel
 Priority: optional
 Description: ZeroCD kernel meta package
@@ -70,14 +70,14 @@ Package: linux-libc-dev
 Source: linux-upstream
 Version: 6.12.75-g47d9548fdf3c-1
 Architecture: arm64
-Maintainer: runner <runner@runnervm6gd1v>
+Maintainer: runner <runner@runnervm6gd1v.ww3fxjpxopae5iu41fpnyzhw2d.cx.internal.cloudapp.net>
 Installed-Size: 7082
 Provides: linux-kernel-headers
 Filename: pool/main/linux-libc-dev_6.12.75-g47d9548fdf3c-1_arm64.deb
-Size: 1419470
-MD5sum: e510891af229ea6bffa8b00acb11f081
-SHA1: 8ec9b8f0e82f65d8c0097cc776c00017a3c06782
-SHA256: 1e65aa4b0041ee2d40321e3fd101ac0ec2b70268aefd1a7d0ef9709c2668d445
+Size: 1419564
+MD5sum: 99de4d5ca49b2baa1dabd8a8ba039804
+SHA1: 5ef4cedcafe34c65a462db15645cde42f37120f9
+SHA256: fa7666832c6426c98f07b3e539a3a24dfb2506aacf6eeba37779797c2f4d03d2
 Section: devel
 Priority: optional
 Multi-Arch: same
