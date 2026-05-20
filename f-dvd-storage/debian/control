@@ -2,7 +2,7 @@ Source: f-dvd-storage
 Section: kernel
 Priority: optional
 Maintainer: Sergey <sergey00475@github>
-Build-Depends: debhelper-compat (= 13), dkms
+Build-Depends: debhelper-compat (= 13), dh-dkms, dkms
 Standards-Version: 4.6.0
 
 Package: f-dvd-storage-dkms

@@ -124,9 +124,9 @@ jobs:
       - name: Install build dependencies
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y \
-            debhelper dkms dpkg-dev apt-utils gnupg devscripts \
-            python3 build-essential
+sudo apt-get install -y \
+  debhelper dh-dkms dkms dpkg-dev apt-utils gnupg devscripts \
+  python3 build-essential
 
       # ── Ставим kernel headers из нашего же pool ───────────────────────────
       - name: Install ZeroCD kernel headers from pool
