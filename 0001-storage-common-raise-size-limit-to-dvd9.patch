@@ -1,0 +1,53 @@
+From: ZeroCD DVD support series
+Subject: [PATCH 1/6] usb: gadget: storage_common: raise optical disc size limit to DVD-9 DL
+
+The current limit of 256*60*75 sectors (~1.15 GB) is hardcoded for
+CD-ROM geometry (MSF addressing caps at 255 minutes). However the
+driver does NOT use MSF for READ(10)/READ(12) data transfers -- it
+uses LBA. The MSF limit only applies to READ TOC responses.
+
+For DVD-ROM emulation we need to handle images up to 4,173,824
+sectors (DVD-9 DL = ~8.5 GB). READ TOC will report the disc as a
+single-session CD-style track regardless; only GET CONFIGURATION
+and READ DVD STRUCTURE will reveal the true DVD profile.
+
+Note: num_sectors is already loff_t in the current kernel so no
+struct change is needed.
+
+Signed-off-by: ZeroCD patch series
+---
+ drivers/usb/gadget/function/storage_common.c | 14 +++++++++-----
+ 1 file changed, 9 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/usb/gadget/function/storage_common.c b/drivers/usb/gadget/function/storage_common.c
+index 75831f2c7..da3a1015a 100644
+--- a/drivers/usb/gadget/function/storage_common.c
++++ b/drivers/usb/gadget/function/storage_common.c
+@@ -176,6 +176,9 @@ void fsg_lun_close(struct fsg_lun *curlun)
+ }
+ EXPORT_SYMBOL_GPL(fsg_lun_close);
+ 
++
++/* DVD-9 DL max sectors (2048-byte blocks): 4,173,824 */
++#define FSG_MAX_DVD9_SECTORS 4173824ULL
+ int fsg_lun_open(struct fsg_lun *curlun, const char *filename)
+ {
+ 	int				ro;
+@@ -244,11 +247,12 @@ int fsg_lun_open(struct fsg_lun *curlun, const char *filename)
+ 	min_sectors = 1;
+ 	if (curlun->cdrom) {
+ 		min_sectors = 300;	/* Smallest track is 300 frames */
+-		if (num_sectors >= 256*60*75) {
+-			num_sectors = 256*60*75 - 1;
+-			LINFO(curlun, "file too big: %s\n", filename);
+-			LINFO(curlun, "using only first %d blocks\n",
+-					(int) num_sectors);
++		if (num_sectors >= FSG_MAX_DVD9_SECTORS) {
++			num_sectors = FSG_MAX_DVD9_SECTORS - 1;
++			LINFO(curlun,
++				"optical image exceeds DVD-9 DL limit (%llu sectors > %llu), clamping\n",
++				(unsigned long long)(size >> blkbits),
++				FSG_MAX_DVD9_SECTORS);
+ 		}
+ 	}
+ 	if (num_sectors < min_sectors) {

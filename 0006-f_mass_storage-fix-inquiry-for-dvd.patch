@@ -1,0 +1,64 @@
+From: ZeroCD DVD support series
+Subject: [PATCH 6/6] usb: gadget: f_mass_storage: fix INQUIRY product string for DVD images
+
+Currently the INQUIRY response always says "File-CD Gadget" regardless
+of image size. When paired with GET CONFIGURATION advertising a DVD-ROM
+profile, some hosts (especially older Windows versions) verify the
+product string for "DVD" as a sanity check.
+
+Change the product ID string to "File-DVD Gadget" for images larger
+than 900 MB, keeping "File-CD Gadget" for smaller images.
+
+Also update the Peripheral Qualifier/Device Type byte: it is already
+TYPE_ROM (0x05) for cdrom LUNs which is correct for both CD and DVD
+per SCSI-3 SPC (DVD drives also use TYPE_ROM). No change needed there.
+
+The Version byte (buf[2]) is set to 0x02 (SCSI-2) for CD images and
+0x05 (SPC-3) for DVD images to match what real DVD-ROM drives report.
+
+The buf[1] Removable Medium Bit is always set to 0x80 for optical
+drives regardless of the removable flag, matching real DVD-ROM behavior.
+
+Signed-off-by: ZeroCD patch series
+---
+ drivers/usb/gadget/function/f_mass_storage.c | 16 ++++++++++++----
+ 1 file changed, 12 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/usb/gadget/function/f_mass_storage.c b/drivers/usb/gadget/function/f_mass_storage.c
+index a9115244c54a..6a948f5ba89e 100644
+--- a/drivers/usb/gadget/function/f_mass_storage.c
++++ b/drivers/usb/gadget/function/f_mass_storage.c
+@@ -1064,11 +1064,20 @@ static int do_inquiry(struct fsg_common *common, struct fsg_buffhd *bh)
+ 	}
+ 
+ 	buf[0] = curlun->cdrom ? TYPE_ROM : TYPE_DISK;
+-	buf[1] = curlun->removable ? 0x80 : 0;
+-	buf[2] = 2;			/* ANSI SCSI level 2 */
+-	buf[3] = 2;			/* SCSI-2 INQUIRY data format */
++	buf[1] = 0x80;			/* Removable Medium Bit: always set for optical */
++	{
++		bool	is_dvd = curlun->cdrom && (curlun->num_sectors > 450000);
++
++		if (is_dvd) {
++			buf[2] = 0x05;	/* Version: SPC-3 (what real DVD drives report) */
++			buf[3] = 0x02;	/* Response Data Format: SPC-2/3 */
++		} else {
++			buf[2] = 0x02;	/* Version: SCSI-2 */
++			buf[3] = 0x02;	/* Response Data Format: SCSI-2 */
++		}
++	}
+ 	buf[4] = 31;			/* Additional length */
+-	buf[5] = 0;			/* No special options */
++	buf[5] = 0;
+ 	buf[6] = 0;
+ 	buf[7] = 0;
+ 	if (curlun->inquiry_string[0])
+@@ -1077,6 +1086,9 @@ static int do_inquiry(struct fsg_common *common, struct fsg_buffhd *bh)
+ 	else
+ 		memcpy(buf + 8, common->inquiry_string,
+ 				sizeof(common->inquiry_string));
++	if (curlun->cdrom && curlun->num_sectors > 450000 &&
++			!curlun->inquiry_string[0])
++		sprintf(buf + 16, "%-16s", "File-DVD Gadget");
+ 	return 36;
+ }

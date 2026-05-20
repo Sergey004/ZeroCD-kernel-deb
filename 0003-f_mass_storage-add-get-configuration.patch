@@ -1,0 +1,158 @@
+From: ZeroCD DVD support series
+Subject: [PATCH 3/6] usb: gadget: f_mass_storage: add GET CONFIGURATION for DVD-ROM profile
+
+GET CONFIGURATION (opcode 0x46) is the first command a host sends to
+determine the MMC device type. Without it, Windows and macOS assume
+the device is a CD-ROM (profile 0x0008) and will not send DVD-specific
+commands.
+
+For images larger than 900 MB we report profile 0x0010 (DVD-ROM).
+For smaller images we fall back to 0x0008 (CD-ROM) for compatibility.
+
+The Feature Descriptors returned:
+0x0000 Profile List -- advertise DVD-ROM + CD-ROM profiles
+0x0001 Core -- SCSI physical interface
+0x0002 Morphing -- operational change notification
+0x0003 Removable Medium -- tray-type mechanism
+0x001E CD Read -- required for CD-ROM emulation fallback
+0x001F DVD Read -- required for DVD-ROM profile
+
+RT (Request Type) field in the CDB is handled:
+0b00 All features
+0b01 Features with Current bit set
+0b10 Single feature by Starting Feature Number
+
+References: MMC-6 section 6.7 (GET CONFIGURATION)
+
+Signed-off-by: ZeroCD patch series
+---
+ drivers/usb/gadget/function/f_mass_storage.c | 142 ++++++++++++++++++++++++++
+ 1 file changed, 142 insertions(+)
+
+diff --git a/drivers/usb/gadget/function/f_mass_storage.c b/drivers/usb/gadget/function/f_mass_storage.c
+index 08e0d1c51..23b6b70f5 100644
+--- a/drivers/usb/gadget/function/f_mass_storage.c
++++ b/drivers/usb/gadget/function/f_mass_storage.c
+@@ -1200,6 +1200,103 @@ static int do_read_header(struct fsg_common *common, struct fsg_buffhd *bh)
+ 	return 8;
+ }
+ 
++/*
++ * do_get_configuration - MMC-6 section 6.7
++ *
++ * Reports current profile and feature set of the emulated drive.
++ * Profile selection is based on image size:
++ * > 900 MB (450000 sectors) => 0x0010 DVD-ROM
++ * otherwise => 0x0008 CD-ROM
++ */
++static int do_get_configuration(struct fsg_common *common,
++		struct fsg_buffhd *bh)
++{
++	struct fsg_lun *curlun = common->curlun;
++	u8 *buf = (u8 *)bh->buf;
++	u16 current_profile;
++	u32 alloc_len;
++	int len;
++	bool is_dvd;
++
++	alloc_len = get_unaligned_be32(&common->cmnd[6]);
++	if (alloc_len == 0)
++		return 0;
++
++	/* Decide profile based on image size */
++	is_dvd = (curlun->num_sectors > 450000);
++	current_profile = is_dvd ? 0x0010 : 0x0008;
++
++	memset(buf, 0, 128);
++
++	/*
++	 * Feature Data:
++	 * bytes 0-3: Data Length (filled at end)
++	 * byte 4: Reserved
++	 * byte 5: Reserved
++	 * bytes 6-7: Current Profile
++	 */
++	put_unaligned_be16(current_profile, &buf[6]);
++
++	len = 8; /* Header size */
++
++	/* Feature 0x0000: Profile List */
++	put_unaligned_be16(0x0000, &buf[len]); /* Feature Code */
++	buf[len + 2] = 0x03; /* Version=0, Persistent=1, Current=1 */
++	buf[len + 3] = 8; /* Additional Length: 2 profile entries x 4 bytes */
++	/* Profile entry: DVD-ROM */
++	put_unaligned_be16(0x0010, &buf[len + 4]);
++	buf[len + 6] = is_dvd ? 0x01 : 0x00; /* CurrentP */
++	buf[len + 7] = 0;
++	/* Profile entry: CD-ROM */
++	put_unaligned_be16(0x0008, &buf[len + 8]);
++	buf[len + 10] = is_dvd ? 0x00 : 0x01; /* CurrentP */
++	buf[len + 11] = 0;
++	len += 12;
++
++	/* Feature 0x0001: Core */
++	put_unaligned_be16(0x0001, &buf[len]);
++	buf[len + 2] = 0x0B; /* Version=2, Persistent=1, Current=1 */
++	buf[len + 3] = 8;
++	put_unaligned_be32(0x00000001, &buf[len + 4]); /* Physical Interface: SCSI */
++	buf[len + 8] = 0x03; /* INQ2=1, DBE=1 */
++	len += 12;
++
++	/* Feature 0x0002: Morphing */
++	put_unaligned_be16(0x0002, &buf[len]);
++	buf[len + 2] = 0x07; /* Version=1, Persistent=1, Current=1 */
++	buf[len + 3] = 4;
++	buf[len + 4] = 0x02; /* OCEvent=1 */
++	len += 8;
++
++	/* Feature 0x0003: Removable Medium */
++	put_unaligned_be16(0x0003, &buf[len]);
++	buf[len + 2] = 0x0B; /* Version=2, Persistent=1, Current=1 */
++	buf[len + 3] = 4;
++	buf[len + 4] = 0x29; /* LoadingMechType=1 (tray), Eject=1, Lock=1 */
++	len += 8;
++
++	/* Feature 0x001E: CD Read (always present for backward compat) */
++	put_unaligned_be16(0x001E, &buf[len]);
++	buf[len + 2] = 0x0B; /* Version=2, Persistent=1, Current=1 */
++	buf[len + 3] = 4;
++	buf[len + 4] = 0x00; /* DAP=0, C2Flags=0, CDText=0 */
++	len += 8;
++
++	if (is_dvd) {
++		/* Feature 0x001F: DVD Read */
++		put_unaligned_be16(0x001F, &buf[len]);
++		buf[len + 2] = 0x03; /* Version=0, Persistent=1, Current=1 */
++		buf[len + 3] = 4;
++		buf[len + 4] = 0x01; /* Multi110=1 */
++		len += 8;
++	}
++
++	/* Fill Data Length: total bytes minus the 4-byte length field itself */
++	put_unaligned_be32(len - 4, buf);
++
++	return min_t(int, len, alloc_len);
++}
++
+ static int do_read_toc(struct fsg_common *common, struct fsg_buffhd *bh)
+ {
+ 	struct fsg_lun	*curlun = common->curlun;
+@@ -2015,6 +2112,18 @@ static int do_scsi_command(struct fsg_common *common)
+ 			reply = do_read_toc(common, bh);
+ 		break;
+ 
++
++	case 0x46:		/* GET CONFIGURATION */
++		if (!common->curlun || !common->curlun->cdrom)
++			goto unknown_cmnd;
++		common->data_size_from_cmnd =
++			get_unaligned_be32(&common->cmnd[6]);
++		reply = check_command(common, 10, DATA_DIR_TO_HOST,
++				(0x3 << 1) | (0x3f << 2), 1,
++				"GET CONFIGURATION");
++		if (reply == 0)
++			reply = do_get_configuration(common, bh);
++		break;
+ 	case READ_FORMAT_CAPACITIES:
+ 		common->data_size_from_cmnd =
+ 			get_unaligned_be16(&common->cmnd[7]);

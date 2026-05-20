@@ -1,0 +1,124 @@
+From: ZeroCD DVD support series
+Subject: [PATCH 5/6] usb: gadget: f_mass_storage: add READ DISC INFORMATION
+
+READ DISC INFORMATION (opcode 0x51) is sent by some hosts (notably
+Windows autorun and macOS disc mounting) to determine disc state,
+erasability, and session/track counts.
+
+We return a Standard Disc Information response indicating:
+ - Disc Status: Complete (finalized, not erasable)
+ - Last Session State: Complete
+ - Number of Sessions: 1
+ - First Track in Last Session: 1
+ - Last Track in Last Session: 1
+ - Disc Type: CD-ROM (0x00) -- even for DVD images; hosts check
+   the profile via GET CONFIGURATION, not disc type here
+ - No Disc ID, No OPC, No BCA
+
+Data Block Type 0b00 (Standard Disc Information) is the only type
+we support. Types 0b01 and 0b10 return INVALID FIELD IN CDB.
+
+References: MMC-6 section 6.22 (READ DISC INFORMATION)
+
+Signed-off-by: ZeroCD patch series
+---
+ drivers/usb/gadget/function/f_mass_storage.c | 79 +++++++++++++++++++++++++++
+ 1 file changed, 79 insertions(+)
+
+diff --git a/drivers/usb/gadget/function/f_mass_storage.c b/drivers/usb/gadget/function/f_mass_storage.c
+index 6f591c1f8050..a9115244c54a 100644
+--- a/drivers/usb/gadget/function/f_mass_storage.c
++++ b/drivers/usb/gadget/function/f_mass_storage.c
+@@ -1365,6 +1365,73 @@ static int do_get_configuration(struct fsg_common *common,
+ 	return min_t(int, len, alloc_len);
+ }
+ 
++/*
++ * do_read_disc_information - MMC-6 section 6.22
++ *
++ * Returns information about disc status. We always report a complete,
++ * non-erasable single-session disc with one track.
++ */
++static int do_read_disc_information(struct fsg_common *common,
++		struct fsg_buffhd *bh)
++{
++	u8		*buf = (u8 *)bh->buf;
++	u8		data_type;
++	u16		alloc_len;
++	int		len;
++
++	alloc_len = get_unaligned_be16(&common->cmnd[7]);
++	if (alloc_len == 0)
++		return 0;
++
++	/* Data Block Type: bits 2:0 of byte 1 */
++	data_type = common->cmnd[1] & 0x07;
++
++	if (data_type != 0x00) {
++		/* Only Standard Disc Information (0b000) supported */
++		common->curlun->sense_data = SS_INVALID_FIELD_IN_CDB;
++		return -EINVAL;
++	}
++
++	/* Standard Disc Information block: 34 bytes total */
++	len = 34;
++	memset(buf, 0, len);
++
++	/* Disc Information Length (bytes 0-1): length - 2 */
++	put_unaligned_be16(len - 2, buf);
++
++	/*
++	 * byte 2:
++	 * bits 7:5 = Erasable=0, State of Last Session=11b (complete),
++	 * bits 4:2 = Disc Status=11b (complete / finalized)
++	 * bit 1 = Dirty Bit (DBit) = 0
++	 * bit 0 = Data Type = 0 (Standard)
++	 */
++	buf[2] = (0x3 << 5) |	/* State of Last Session = Complete */
++		 (0x3 << 2);	/* Disc Status = Complete */
++
++	buf[3] = 1;		/* Number of First Track on Disc */
++
++	/*
++	 * byte 4: Number of Sessions (LSB)
++	 * byte 5: First Track Number in Last Session (LSB)
++	 * byte 6: Last Track Number in Last Session (LSB)
++	 */
++	buf[4] = 1;		/* 1 session */
++	buf[5] = 1;		/* first track in last session */
++	buf[6] = 1;		/* last track in last session */
++
++	/*
++	 * byte 8: Disc Type
++	 * 0x00 = CD-DA or CD-ROM (used for both CD and DVD images;
++	 * actual device type is communicated via GET CONFIGURATION)
++	 */
++	buf[8] = 0x00;
++
++	/* bytes 9-31: Disc Identification, OPC tables, etc. -- all zeros */
++
++	return min_t(int, len, alloc_len);
++}
++
+ static int do_read_toc(struct fsg_common *common, struct fsg_buffhd *bh)
+ {
+ 	struct fsg_lun	*curlun = common->curlun;
+@@ -2179,6 +2246,18 @@ static int do_scsi_command(struct fsg_common *common)
+ 		reply = do_read_dvd_structure(common, bh);
+ 		break;
+ 
++	case 0x51:		/* READ DISC INFORMATION */
++		if (!common->curlun || !common->curlun->cdrom)
++			goto unknown_cmnd;
++		common->data_size_from_cmnd =
++			get_unaligned_be16(&common->cmnd[7]);
++		reply = check_command(common, 10, DATA_DIR_TO_HOST,
++				(0x7<<1), 1,
++				"READ DISC INFORMATION");
++		if (reply == 0)
++			reply = do_read_disc_information(common, bh);
++		break;
++
+ 	case READ_TOC:
+ 		if (!common->curlun || !common->curlun->cdrom)
+ 			goto unknown_cmnd;
