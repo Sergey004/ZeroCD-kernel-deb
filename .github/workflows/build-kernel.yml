@@ -106,7 +106,7 @@ jobs:
           cd kernel-src
           PATCHES=$(ls ../repo/patches/00-*.patch 2>/dev/null || true)
           if [ -z "$PATCHES" ]; then
-            echo "⚠️  No patches found in patches/00-*.patch - building without patches"
+            echo "⚠️  No patches found in patches/0000-*.patch - building without patches"
           else
             for patch in ../repo/patches/00-*.patch; do
               echo "▶ Applying: $(basename $patch)"

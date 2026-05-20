@@ -23,7 +23,14 @@ diff --git a/drivers/usb/gadget/function/storage_common.c b/drivers/usb/gadget/f
 index 75831f2c7..da3a1015a 100644
 --- a/drivers/usb/gadget/function/storage_common.c
 +++ b/drivers/usb/gadget/function/storage_common.c
-@@ -176,6 +176,9 @@ void fsg_lun_close(struct fsg_lun *curlun)
+@@ -169,20 +169,23 @@ EXPORT_SYMBOL_GPL(fsg_ss_function);
+ void fsg_lun_close(struct fsg_lun *curlun)
+ {
+ 	if (curlun->filp) {
+ 		LDBG(curlun, "close backing file\n");
+ 		fput(curlun->filp);
+ 		curlun->filp = NULL;
+ 	}
  }
  EXPORT_SYMBOL_GPL(fsg_lun_close);
  
@@ -33,7 +40,21 @@ index 75831f2c7..da3a1015a 100644
  int fsg_lun_open(struct fsg_lun *curlun, const char *filename)
  {
  	int				ro;
-@@ -244,11 +247,12 @@ int fsg_lun_open(struct fsg_lun *curlun, const char *filename)
+ 	struct file			*filp = NULL;
+ 	int				rc = -EINVAL;
+ 	struct inode			*inode = NULL;
+ 	loff_t				size;
+ 	loff_t				num_sectors;
+ 	loff_t				min_sectors;
+ 	unsigned int			blkbits;
+@@ -237,25 +240,26 @@ int fsg_lun_open(struct fsg_lun *curlun, const char *filename)
+ 		blkbits = blksize_bits(blksize);
+ 	} else {
+ 		blksize = 512;
+ 		blkbits = 9;
+ 	}
+ 
+ 	num_sectors = size >> blkbits; /* File size in logic-block-size blocks */
  	min_sectors = 1;
  	if (curlun->cdrom) {
  		min_sectors = 300;	/* Smallest track is 300 frames */
@@ -51,3 +72,10 @@ index 75831f2c7..da3a1015a 100644
  		}
  	}
  	if (num_sectors < min_sectors) {
+ 		LINFO(curlun, "file too small: %s\n", filename);
+ 		rc = -ETOOSMALL;
+ 		goto out;
+ 	}
+ 
+ 	if (fsg_lun_is_open(curlun))
+ 		fsg_lun_close(curlun);

@@ -9,9 +9,9 @@ Without this command, Windows throws a "disc not recognized" error
 even though it already know the profile is DVD-ROM.
 
 Implemented formats:
-  0x00 Physical Format Information -- disc geometry, layer count,
-       starting/ending PSN for the data zone
-  0xFF Copyright Information Request -- returns "no copyright protection"
+0x00 Physical Format Information -- disc geometry, layer count,
+starting/ending PSN for the data zone
+0xFF Copyright Information Request -- returns "no copyright protection"
 
 All other format codes return INVALID FIELD IN CDB per MMC-6.
 
@@ -27,10 +27,17 @@ Signed-off-by: ZeroCD patch series
  1 file changed, 80 insertions(+)
 
 diff --git a/drivers/usb/gadget/function/f_mass_storage.c b/drivers/usb/gadget/function/f_mass_storage.c
-index e5465bfa4b93..6f591c1f8050 100644
+index e5465bfa4..84b129fa1 100644
 --- a/drivers/usb/gadget/function/f_mass_storage.c
 +++ b/drivers/usb/gadget/function/f_mass_storage.c
-@@ -1297,6 +1297,74 @@ static int do_get_configuration(struct fsg_common *common,
+@@ -1290,20 +1290,88 @@ static int do_get_configuration(struct fsg_common *common,
+ 		buf[len + 4] = 0x01; /* Multi110=1 */
+ 		len += 8;
+ 	}
+ 
+ 	/* Fill Data Length: total bytes minus the 4-byte length field itself */
+ 	put_unaligned_be32(len - 4, buf);
+ 
  	return min_t(int, len, alloc_len);
  }
  
@@ -105,8 +112,22 @@ index e5465bfa4b93..6f591c1f8050 100644
  static int do_read_toc(struct fsg_common *common, struct fsg_buffhd *bh)
  {
  	struct fsg_lun	*curlun = common->curlun;
-@@ -2096,7 +2164,19 @@ static int do_scsi_command(struct fsg_common *common)
- 		reply = do_read_header(common, bh);
+ 	int		msf = common->cmnd[1] & 0x02;
+ 	int		start_track = common->cmnd[6];
+ 	u8		*buf = (u8 *)bh->buf;
+ 	u8		format;
+ 	int		i, len;
+ 
+ 	format = common->cmnd[2] & 0xf;
+@@ -2092,20 +2160,32 @@ static int do_scsi_command(struct fsg_common *common)
+ 			goto unknown_cmnd;
+ 		common->data_size_from_cmnd =
+ 			get_unaligned_be16(&common->cmnd[7]);
+ 		reply = check_command(common, 10, DATA_DIR_TO_HOST,
+ 				      (3<<7) | (0x1f<<1), 1,
+ 				      "READ HEADER");
+ 		if (reply == 0)
+ 			reply = do_read_header(common, bh);
  		break;
  
 +	case 0xAD:		/* READ DVD STRUCTURE */
@@ -121,8 +142,13 @@ index e5465bfa4b93..6f591c1f8050 100644
 +			reply = do_read_dvd_structure(common, bh);
 +		break;
 +
- case READ_TOC:
+ 	case READ_TOC:
  		if (!common->curlun || !common->curlun->cdrom)
  			goto unknown_cmnd;
  		common->data_size_from_cmnd =
  			get_unaligned_be16(&common->cmnd[7]);
+ 		reply = check_command(common, 10, DATA_DIR_TO_HOST,
+ 				      (0xf<<6) | (1<<2) | (1<<1), 1,
+ 				      "READ TOC");
+ 		if (reply == 0)
+ 			reply = do_read_toc(common, bh);
