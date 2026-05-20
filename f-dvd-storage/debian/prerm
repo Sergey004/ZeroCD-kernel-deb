@@ -1,0 +1,18 @@
+#!/bin/bash
+# debian/prerm
+set -e
+
+PKG="f-dvd-storage"
+VER="1.0.0"
+
+case "$1" in
+remove|purge)
+    if command -v dkms >/dev/null 2>&1; then
+        echo "Удаляем $PKG/$VER из DKMS ..."
+        dkms remove "$PKG/$VER" --all 2>/dev/null || true
+    fi
+    ;;
+esac
+
+#DEBHELPER#
+exit 0

@@ -1,0 +1,34 @@
+#!/usr/bin/make -f
+# debian/rules
+
+%:
+	dh $@ --with dkms
+
+override_dh_auto_configure:
+	# Ничего не делаем — сборка через DKMS при установке
+
+override_dh_auto_build:
+	# Ничего не делаем — DKMS собирает при установке
+
+override_dh_auto_install:
+	# DKMS source tree → /usr/src/f-dvd-storage-1.0.0/
+	dh_installdirs usr/src/f-dvd-storage-1.0.0
+	cp -a dkms.conf Makefile patches src \
+		debian/f-dvd-storage-dkms/usr/src/f-dvd-storage-1.0.0/
+
+	# Скрипты DKMS (prebuild, postinstall, postremove)
+	dh_installdirs usr/src/f-dvd-storage-1.0.0/scripts
+	cp -a scripts/. \
+		debian/f-dvd-storage-dkms/usr/src/f-dvd-storage-1.0.0/scripts/
+	chmod 0755 \
+		debian/f-dvd-storage-dkms/usr/src/f-dvd-storage-1.0.0/scripts/*.sh
+
+	# udev helper скрипты → /usr/lib/f-dvd-storage/
+	dh_installdirs usr/lib/f-dvd-storage
+	cp -a usr/lib/f-dvd-storage/. \
+		debian/f-dvd-storage-dkms/usr/lib/f-dvd-storage/
+	chmod 0755 \
+		debian/f-dvd-storage-dkms/usr/lib/f-dvd-storage/*.sh
+
+override_dh_dkms:
+	dh_dkms -V 1.0.0

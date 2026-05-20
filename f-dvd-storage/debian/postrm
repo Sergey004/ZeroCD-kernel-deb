@@ -1,0 +1,15 @@
+#!/bin/bash
+# debian/postrm
+set -e
+
+case "$1" in
+purge)
+    rm -f /etc/modprobe.d/f-dvd-storage.conf
+    rm -f /etc/modules-load.d/f-dvd-storage.conf
+    rm -f /etc/udev/rules.d/89-dvd-gadget.rules
+    udevadm control --reload-rules 2>/dev/null || true
+    ;;
+esac
+
+#DEBHELPER#
+exit 0

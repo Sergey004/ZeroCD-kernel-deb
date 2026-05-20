@@ -1,0 +1,12 @@
+f-dvd-storage (1.0.0-1) unstable; urgency=low
+
+  * Initial release.
+  * DVD-ROM SCSI commands: GET CONFIGURATION (0x46),
+    READ DVD STRUCTURE (0xAD), READ DISC INFORMATION (0x51).
+  * READ TOC: multi-session support + Mac OS X SFF8020i raw format.
+  * Raises optical image size limit from ~1.1 GB (CD) to ~8.5 GB (DVD-9 DL).
+  * INQUIRY reports "File-DVD Gadget" for images > 900 MB.
+  * symbol_rename.h: coexists with stock f_mass_storage.ko.
+  * udev rules for automatic gadget setup on UDC hotplug.
+
+ -- Sergey <sergey004@github>  Mon, 19 May 2025 00:00:00 +0200

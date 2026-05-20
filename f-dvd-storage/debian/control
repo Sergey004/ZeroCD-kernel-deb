@@ -1,0 +1,22 @@
+Source: f-dvd-storage
+Section: kernel
+Priority: optional
+Maintainer: Sergey <sergey00475@github>
+Build-Depends: debhelper-compat (= 13), dkms
+Standards-Version: 4.6.0
+
+Package: f-dvd-storage-dkms
+Architecture: all
+Depends: dkms,
+         python3,
+         raspberrypi-kernel-headers | linux-headers-${kernel:Version},
+Description: USB gadget DVD-ROM storage module (DKMS)
+ Out-of-tree kernel module that extends the USB mass storage gadget
+ with full DVD-ROM emulation. Adds GET CONFIGURATION (0x46),
+ READ DVD STRUCTURE (0xAD) and READ DISC INFORMATION (0x51) SCSI
+ commands so that hosts see a real DVD-ROM drive instead of a CD-ROM.
+ .
+ Designed for Raspberry Pi Zero 2 W (ZeroCD project) but works on
+ any ARM64 Linux system with dwc2/UDC gadget support.
+ .
+ DKMS automatically rebuilds the module when the kernel is updated.

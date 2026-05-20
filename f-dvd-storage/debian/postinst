@@ -1,0 +1,79 @@
+#!/bin/bash
+# debian/postinst
+set -e
+
+PKG="f-dvd-storage"
+VER="1.0.0"
+SRC="/usr/src/${PKG}-${VER}"
+
+case "$1" in
+configure)
+    # --- Регистрируем в DKMS и собираем ------------------------------------
+    if command -v dkms >/dev/null 2>&1; then
+        # Удаляем старую версию если есть
+        if dkms status "$PKG/$VER" 2>/dev/null | grep -q installed; then
+            dkms remove "$PKG/$VER" --all 2>/dev/null || true
+        fi
+
+        echo "Регистрация $PKG/$VER в DKMS ..."
+        dkms add "$SRC" || true
+
+        echo "Сборка модуля для текущего ядра $(uname -r) ..."
+        dkms build  "$PKG/$VER" -k "$(uname -r)" || {
+            echo "WARN: dkms build завершился с ошибкой."
+            echo "Убедись что установлены kernel headers:"
+            echo "  sudo apt install raspberrypi-kernel-headers"
+            exit 0
+        }
+
+        echo "Установка модуля ..."
+        dkms install "$PKG/$VER" -k "$(uname -r)" || true
+    else
+        echo "WARN: dkms не найден. Установи: sudo apt install dkms"
+    fi
+
+    # --- modprobe конфиг ----------------------------------------------------
+    MCONF="/etc/modprobe.d/f-dvd-storage.conf"
+    if [ ! -f "$MCONF" ]; then
+        cat > "$MCONF" <<'EOF'
+# f-dvd-storage: заменяем стоковый CD-ROM gadget на DVD-ROM
+blacklist usb_f_mass_storage
+alias dvd_storage f_dvd_storage
+EOF
+    fi
+
+    # --- modules-load -------------------------------------------------------
+    MLOAD="/etc/modules-load.d/f-dvd-storage.conf"
+    if [ ! -f "$MLOAD" ]; then
+        printf 'libcomposite\nf_dvd_storage\n' > "$MLOAD"
+    fi
+
+    # --- udev ---------------------------------------------------------------
+    UDEV="/etc/udev/rules.d/89-dvd-gadget.rules"
+    if [ ! -f "$UDEV" ]; then
+        cat > "$UDEV" <<'EOF'
+ACTION=="add",    SUBSYSTEM=="udc", RUN+="/usr/lib/f-dvd-storage/udc-up.sh %k"
+ACTION=="remove", SUBSYSTEM=="udc", RUN+="/usr/lib/f-dvd-storage/udc-down.sh %k"
+EOF
+        udevadm control --reload-rules 2>/dev/null || true
+    fi
+
+    # --- Подсказка по образу ------------------------------------------------
+    if [ ! -f "/etc/dvd-gadget/image.iso" ]; then
+        mkdir -p /etc/dvd-gadget
+        cat > /etc/dvd-gadget/image.iso.example <<'EOF'
+# Помести ISO образ сюда или создай симлинк:
+#   sudo ln -s /media/usb/MacOSX_10.6.iso /etc/dvd-gadget/image.iso
+EOF
+        echo ""
+        echo "*** f-dvd-storage установлен ***"
+        echo "Укажи образ:"
+        echo "  sudo ln -s /path/to/your.iso /etc/dvd-gadget/image.iso"
+        echo "После этого gadget активируется автоматически при подключении USB."
+        echo ""
+    fi
+    ;;
+esac
+
+#DEBHELPER#
+exit 0

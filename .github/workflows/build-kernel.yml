@@ -6,7 +6,8 @@ on:
   workflow_dispatch:           # Manual trigger
   push:
     paths:
-      - 'patches/**.patch'    # Trigger on patch changes
+    - 'patches/**.patch'
+    - '.github/workflows/build-kernel.yml'
 
 jobs:
   check:
@@ -104,13 +105,14 @@ jobs:
         run: |
           set -e
           cd kernel-src
-          PATCHES=$(ls ../repo/patches/00-*.patch 2>/dev/null || true)
+          PATCHES=$(ls ../repo/patches/0*.patch 2>/dev/null | sort || true)
           if [ -z "$PATCHES" ]; then
-            echo "⚠️  No patches found in patches/0000-*.patch - building without patches"
+            echo "⚠️ No patches found in patches/ - building without patches"
           else
-            for patch in ../repo/patches/00-*.patch; do
+            for patch in $PATCHES; do
               echo "▶ Applying: $(basename $patch)"
-              git apply --reject --whitespace=fix "$patch"
+              git apply --check "$patch" || exit 1
+              git apply --whitespace=fix "$patch"
             done
             echo "✅ All patches applied"
           fi

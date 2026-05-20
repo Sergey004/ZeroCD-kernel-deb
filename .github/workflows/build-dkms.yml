@@ -1,118 +1,116 @@
 name: Build f-dvd-storage DKMS
 
-# ─── Триггеры ────────────────────────────────────────────────────────────────
 on:
-  # 1. Автоматически после успешного build-kernel.yml
+  # 1. Автоматически после успешного build-kernel.yml (тот же репо)
   workflow_run:
     workflows: ["Build ZeroCD Kernel"]
     types: [completed]
     branches: [master]
 
-  # 2. Ручной запуск (для первой установки или отладки)
+  # 2. При изменении исходников самого пакета
+  push:
+    branches: [master]
+    paths:
+      - 'f-dvd-storage/**'
+
+  # 3. Ручной запуск
   workflow_dispatch:
     inputs:
       force_rebuild:
-        description: 'Пересобрать даже если нет изменений'
+        description: 'Force rebuild even if sources unchanged'
         required: false
         default: false
         type: boolean
 
-# ─── Глобальные переменные ────────────────────────────────────────────────────
 env:
-  PKG_NAME: f-dvd-storage-dkms
+  PKG_NAME: f-dvd-storage
   PKG_VERSION: "1.0.0"
 
 jobs:
-  # ──────────────────────────────────────────────────────────────────────────
-  # JOB 1: Проверить стоит ли вообще пересобирать
-  # ──────────────────────────────────────────────────────────────────────────
+  # ───────────────────────────────────────────────────────────────────────────
+  # JOB 1: Решаем — нужна ли пересборка
+  # ───────────────────────────────────────────────────────────────────────────
   check:
     name: Check if rebuild needed
     runs-on: ubuntu-24.04
-    # Запускаем только если workflow_run завершился успешно,
-    # или если запущен вручную
     if: >
       github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'push' ||
       github.event.workflow_run.conclusion == 'success'
     outputs:
-      skip: ${{ steps.check.outputs.skip }}
-      kernel_ver: ${{ steps.kernel_ver.outputs.ver }}
+      skip:       ${{ steps.decide.outputs.skip }}
+      src_hash:   ${{ steps.hash.outputs.value }}
+      kernel_ver: ${{ steps.kver.outputs.value }}
 
     steps:
+      - name: Checkout master (source)
+        uses: actions/checkout@v4
+        with:
+          path: src
+
       - name: Checkout gh-pages (APT repo)
         uses: actions/checkout@v4
         with:
           ref: gh-pages
           path: apt-repo
           sparse-checkout: |
-            .last_built_sha
             .last_dkms_sha
           sparse-checkout-cone-mode: false
 
-      - name: Get current source SHA
-        id: src_sha
-        uses: actions/checkout@v4
-        with:
-          path: src
-          sparse-checkout: |
-            f-dvd-storage/
-          sparse-checkout-cone-mode: false
-
       - name: Compute source hash
-        id: src_hash
+        id: hash
         run: |
-          # Хеш всех файлов в f-dvd-storage/ + версия пакета
           HASH=$(find src/f-dvd-storage -type f | sort | xargs sha256sum | sha256sum | cut -d' ' -f1)
-          echo "hash=$HASH" >> $GITHUB_OUTPUT
-          echo "Source hash: $HASH"
+          echo "value=$HASH" >> $GITHUB_OUTPUT
+          echo "Hash: $HASH"
 
-      - name: Check if already built
-        id: check
+      - name: Decide skip
+        id: decide
         run: |
           FORCE="${{ inputs.force_rebuild }}"
           if [ -f apt-repo/.last_dkms_sha ]; then
             LAST=$(cat apt-repo/.last_dkms_sha)
-            if [ "$LAST" = "${{ steps.src_hash.outputs.hash }}" ] && [ "$FORCE" != "true" ]; then
+            if [ "$LAST" = "${{ steps.hash.outputs.value }}" ] && [ "$FORCE" != "true" ]; then
               echo "skip=true" >> $GITHUB_OUTPUT
-              echo "✅ DKMS source unchanged, skipping."
+              echo "✅ Source unchanged ($LAST), skipping DKMS build."
             else
               echo "skip=false" >> $GITHUB_OUTPUT
-              echo "🔄 Source changed or force rebuild requested."
+              echo "🔄 Source changed or force-rebuild. Proceeding."
             fi
           else
             echo "skip=false" >> $GITHUB_OUTPUT
             echo "🆕 First DKMS build."
           fi
 
-      - name: Get latest kernel version from APT repo
-        id: kernel_ver
+      - name: Get latest kernel version from APT pool
+        id: kver
         run: |
-          # Ищем последний собранный linux-headers в pool
-          HDR=$(find apt-repo/pool/main -name "linux-headers-*-zerocd*_arm64.deb" \
-                | grep -v 'zerocd_1.0' \
-                | sort -V | tail -1)
+          HDR=$(find apt-repo/pool/main \
+                  -name "linux-headers-*-zerocd*_arm64.deb" \
+                  ! -name "*zerocd_1.0*" \
+                2>/dev/null | sort -V | tail -1)
           if [ -z "$HDR" ]; then
-            echo "⚠️ No kernel headers found in pool yet — using placeholder"
-            echo "ver=unknown" >> $GITHUB_OUTPUT
+            echo "value=unknown" >> $GITHUB_OUTPUT
+            echo "⚠️  No kernel headers in pool yet."
           else
             VER=$(dpkg-deb -f "$HDR" Version)
-            echo "ver=$VER" >> $GITHUB_OUTPUT
+            echo "value=$VER" >> $GITHUB_OUTPUT
             echo "✅ Kernel headers version: $VER"
           fi
 
-  # ──────────────────────────────────────────────────────────────────────────
-  # JOB 2: Собрать .deb пакет
-  # ──────────────────────────────────────────────────────────────────────────
+  # ───────────────────────────────────────────────────────────────────────────
+  # JOB 2: Сборка
+  # ───────────────────────────────────────────────────────────────────────────
   build:
     name: Build DKMS .deb
     needs: check
     if: needs.check.outputs.skip != 'true'
-    runs-on: ubuntu-24.04-arm   # ARM64 нативно (как в build-kernel)
+    runs-on: ubuntu-24.04-arm
     permissions:
       contents: write
 
     steps:
-      - name: Checkout repo (master)
+      - name: Checkout master
         uses: actions/checkout@v4
         with:
           path: repo
@@ -127,75 +125,67 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y \
-            debhelper dkms dpkg-dev apt-utils gnupg \
+            debhelper dkms dpkg-dev apt-utils gnupg devscripts \
             python3 build-essential
 
-      # ── Установить свежие kernel headers из нашего же APT репо ────────────
-      - name: Install kernel headers from local pool
+      # ── Ставим kernel headers из нашего же pool ───────────────────────────
+      - name: Install ZeroCD kernel headers from pool
         run: |
-          # Добавляем наш локальный APT репо временно
           POOL="$(pwd)/apt-repo/pool/main"
-          
-          # Ищем headers deb (не мета-пакет)
-          HDR_DEB=$(find "$POOL" -name "linux-headers-*-zerocd*_arm64.deb" \
-                    | grep -v 'zerocd_1.0' | sort -V | tail -1)
-          
-          if [ -n "$HDR_DEB" ]; then
-            echo "📦 Installing: $(basename $HDR_DEB)"
-            sudo dpkg -i "$HDR_DEB" || sudo apt-get -f install -y
+          HDR=$(find "$POOL" \
+                  -name "linux-headers-*-zerocd*_arm64.deb" \
+                  ! -name "*zerocd_1.0*" \
+                2>/dev/null | sort -V | tail -1)
+
+          if [ -n "$HDR" ]; then
+            echo "📦 Installing: $(basename $HDR)"
+            sudo dpkg -i "$HDR" || sudo apt-get -f install -y
           else
-            echo "⚠️ No local headers, using raspberrypi-kernel-headers as fallback"
+            echo "⚠️  ZeroCD headers not found, falling back to raspberrypi-kernel-headers"
             sudo apt-get install -y raspberrypi-kernel-headers
           fi
-          
-          echo "✅ Installed kernel headers:"
-          dpkg -l | grep linux-headers | grep zerocd || dpkg -l | grep linux-headers | tail -3
+
+          echo "Installed headers:"
+          dpkg -l | grep linux-headers | tail -5
 
       # ── Собрать .deb ───────────────────────────────────────────────────────
       - name: Build f-dvd-storage-dkms .deb
         run: |
           set -e
           cd repo/f-dvd-storage
-          
-          # Обновляем дату в changelog
-          TODAY=$(date -R)
-          sed -i "1s/.*/f-dvd-storage (${PKG_VERSION}-1) unstable; urgency=low/" debian/changelog
-          
-          # Собираем (без подписи — подпишем GPG позже как Release)
-          dpkg-buildpackage -us -uc -b -aarm64
-          
-          # .deb оказывается на уровень выше
+
+          # Architecture: all — НЕ используем -a флаг
+          dpkg-buildpackage -us -uc -b
+
+          # .deb выходит на уровень выше (рядом с f-dvd-storage/)
           cd ..
           DEB=$(find . -maxdepth 1 -name "f-dvd-storage-dkms_*.deb" | head -1)
           if [ -z "$DEB" ]; then
             echo "❌ .deb not found after build!"
-            ls -la
+            find . -maxdepth 2 -name "*.deb"
             exit 1
           fi
-          echo "✅ Built: $DEB"
+          echo "✅ Built: $(basename $DEB)"
           mkdir -p ../debs
           mv "$DEB" ../debs/
 
-      - name: Show built package info
+      - name: Show package info
         run: |
           DEB=$(find debs -name "*.deb" | head -1)
-          echo "📦 Package: $DEB"
-          dpkg-deb -f "$DEB"
+          echo "=== Control ===" && dpkg-deb -f "$DEB"
           echo ""
-          echo "📋 Contents:"
-          dpkg-deb -c "$DEB" | head -40
+          echo "=== Contents ===" && dpkg-deb -c "$DEB" | head -50
 
       # ── Добавить в APT пул ─────────────────────────────────────────────────
-      - name: Add .deb to APT repo pool
+      - name: Add .deb to APT pool
         run: |
           mkdir -p apt-repo/pool/main
-          # Удаляем старые версии f-dvd-storage из пула
           find apt-repo/pool/main -name "f-dvd-storage-dkms_*.deb" -delete || true
           cp debs/*.deb apt-repo/pool/main/
-          echo "✅ Pool contents:"
-          ls -lh apt-repo/pool/main/*.deb
+          echo "Pool contents:"
+          ls -lh apt-repo/pool/main/
 
-      - name: Generate Packages index
+      - name: Regenerate Packages index
         run: |
           cd apt-repo
           mkdir -p dists/stable/main/binary-arm64
@@ -203,10 +193,10 @@ jobs:
             > dists/stable/main/binary-arm64/Packages
           gzip -9c dists/stable/main/binary-arm64/Packages \
             > dists/stable/main/binary-arm64/Packages.gz
-          echo "✅ Packages index regenerated"
+          echo "Packages in index:"
           grep "^Package:" dists/stable/main/binary-arm64/Packages
 
-      - name: Generate Release file
+      - name: Regenerate Release file
         run: |
           cd apt-repo/dists/stable
           apt-ftparchive \
@@ -218,8 +208,6 @@ jobs:
             -o APT::FTPArchive::Release::Components="main" \
             -o APT::FTPArchive::Release::Description="ZeroCD Custom Raspberry Pi Kernel" \
             release . > Release
-          echo "✅ Release file:"
-          cat Release
 
       - name: Import GPG key
         run: |
@@ -227,30 +215,30 @@ jobs:
           FP=$(gpg --list-secret-keys --with-colons | grep '^fpr' | head -1 | cut -d: -f10)
           [ -z "$FP" ] && echo "❌ GPG key not found!" && exit 1
           echo "GPG_FP=$FP" >> $GITHUB_ENV
+          echo "✅ GPG: ${FP:0:16}..."
 
-      - name: Sign Release with GPG
+      - name: Sign Release
         run: |
           cd apt-repo/dists/stable
           gpg --batch --yes \
-            --passphrase "${{ secrets.GPG_PASSPHRASE }}" \
-            --pinentry-mode loopback \
-            --default-key "$GPG_FP" \
-            --clearsign -o InRelease Release
+              --passphrase "${{ secrets.GPG_PASSPHRASE }}" \
+              --pinentry-mode loopback \
+              --default-key "$GPG_FP" \
+              --clearsign -o InRelease Release
           gpg --batch --yes \
-            --passphrase "${{ secrets.GPG_PASSPHRASE }}" \
-            --pinentry-mode loopback \
-            --default-key "$GPG_FP" \
-            --detach-sign --armor -o Release.gpg Release
+              --passphrase "${{ secrets.GPG_PASSPHRASE }}" \
+              --pinentry-mode loopback \
+              --default-key "$GPG_FP" \
+              --detach-sign --armor -o Release.gpg Release
           echo "✅ Release signed"
 
       - name: Export public GPG key
         run: |
           gpg --armor --export "$GPG_FP" > apt-repo/zerocd-kernel.gpg.key
 
-      - name: Save built source hash
+      - name: Save source hash
         run: |
-          HASH=$(find repo/f-dvd-storage -type f | sort | xargs sha256sum | sha256sum | cut -d' ' -f1)
-          echo "$HASH" > apt-repo/.last_dkms_sha
+          echo "${{ needs.check.outputs.src_hash }}" > apt-repo/.last_dkms_sha
 
       - name: Commit and push to gh-pages
         run: |
@@ -258,14 +246,30 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add -A
-          
-          PKG_VER="${{ env.PKG_VERSION }}"
-          KVER="${{ needs.check.outputs.kernel_ver }}"
-          git commit -m "dkms: f-dvd-storage ${PKG_VER} for kernel ${KVER}
+          git diff --cached --quiet && echo "Nothing to commit" && exit 0
+          git commit -m "dkms: f-dvd-storage ${{ env.PKG_VERSION }} for kernel ${{ needs.check.outputs.kernel_ver }}
 
           Built by: ${{ github.workflow }} #${{ github.run_number }}
-          Trigger: ${{ github.event_name }}
-          Source: ${{ github.sha }}" \
-          || echo "Nothing to commit"
-          
+          Trigger:  ${{ github.event_name }}
+          Commit:   ${{ github.sha }}"
           git push origin gh-pages
+
+      - name: Job summary
+        run: |
+          DEB=$(find debs -name "*.deb" | head -1)
+          VER=$(dpkg-deb -f "$DEB" Version)
+          {
+            echo "## ✅ f-dvd-storage DKMS built"
+            echo ""
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Package | \`$(basename $DEB)\` |"
+            echo "| Version | \`$VER\` |"
+            echo "| For kernel | \`${{ needs.check.outputs.kernel_ver }}\` |"
+            echo "| Trigger | ${{ github.event_name }} |"
+            echo ""
+            echo "### Install on Pi:"
+            echo '```bash'
+            echo 'sudo apt install f-dvd-storage-dkms'
+            echo '```'
+          } >> $GITHUB_STEP_SUMMARY
