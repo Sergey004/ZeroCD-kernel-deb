@@ -10,6 +10,9 @@ override_dh_auto_configure:
 override_dh_auto_build:
 	# Ничего не делаем — DKMS собирает при установке
 
+override_dh_auto_clean:
+	# DKMS package: nothing to clean (module isn't built at package-build time)
+
 override_dh_auto_install:
 	# DKMS source tree → /usr/src/f-dvd-storage-1.0.0/
 	dh_installdirs usr/src/f-dvd-storage-1.0.0
