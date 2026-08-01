@@ -4,40 +4,40 @@ Hash: SHA512
 Architectures: arm64
 Codename: stable
 Components: main
-Date: Thu, 30 Jul 2026 06:12:19 +0000
+Date: Sat, 01 Aug 2026 06:26:41 +0000
 Description: ZeroCD Custom Raspberry Pi Kernel
 Label: zerocd-kernel
 Origin: ZeroCD Kernel
 Suite: stable
 MD5Sum:
- 4943e2375a753c6a65ed7a28bb2899a3              197 Release
- a0d45d304394df7c75e2868d57a73b19             4392 main/binary-arm64/Packages
- d7484f5abf521cf745a875dd88f31060             1736 main/binary-arm64/Packages.gz
+ 2b38248c2e789c0e87feb6a6266fb669              197 Release
+ 3f7bb56c095ff73f52958dafdc31b983             4392 main/binary-arm64/Packages
+ 2cb782b7ffc1e818b43c46ba8a562c71             1743 main/binary-arm64/Packages.gz
 SHA1:
- 64417606ddfc91c95da396866bfdb9b3406e94d0              197 Release
- 0202bcd5639ee6d852b6ab2bcba6284f87451e2b             4392 main/binary-arm64/Packages
- 1ee7248a341d6f069bbf0acb8483c61dc9d02995             1736 main/binary-arm64/Packages.gz
+ d3f3ec2189e23d2099e2404ec9b6eeec5c474310              197 Release
+ 58cab55fcdb86af82ed2ec826abd4632d01f53d1             4392 main/binary-arm64/Packages
+ ffeff6ce3e8474206951fa3b3e3a6c5bd6c1aa10             1743 main/binary-arm64/Packages.gz
 SHA256:
- 1775b4e63cd67858b8be813b757a75ca90cd3eb415ed3c5d5cf612e0d526363f              197 Release
- f4f7ca592c57d50a1ca1273ec3899b70680dae3407c301862aaf77cd28d0eab4             4392 main/binary-arm64/Packages
- fb2239e4741bbc5f387d79d207b3a2145f8e1c61710d5b4fc467aeabda46e1e7             1736 main/binary-arm64/Packages.gz
+ 828930c62902776c7748c8aeb84425732cd88f492b7f0e6303f58d5c6518e251              197 Release
+ e7a6556552c8b1b28a54e881ffe685f1d8e711b36c772da84fc93b85aeade96a             4392 main/binary-arm64/Packages
+ 6b9fd826657b6d00a0cbb52d9e59e7ece68cbaf1c7e5a1ef52b47a74373e75d2             1743 main/binary-arm64/Packages.gz
 SHA512:
- 3a9b10e58fae9e04d6552faee89a3bbb2c3168ca35e908c33a3c033f3d62e20628e92028e789ed992993545e4f5b0a64e22ad1efa9cec1576c3333058e0f4ab9              197 Release
- 531117130aa64bdd56fdf98d1bf8176437935156c25bb5a055b71e1db65a378a5f7e9e99bc94352fc6475168bb6087414a2533128ed74223baf4ba78dd4171dd             4392 main/binary-arm64/Packages
- ba92344b78102f7cb76d7bc10585895b5469d3c1ea48197b05d9016d13af1513b471dadb91a95afe9cb3f0c4d59f42b02f822b9f234a8f7d2ddec4f76ab83208             1736 main/binary-arm64/Packages.gz
+ f11e4e5097bb10cc073e7565d595d4ba0cd1e8e6c49b4dac5994084ec14dc1206ea168b65cfa468c6bbe7ce9172545c54e226f85d4ab060ab4dadba48a8fd37c              197 Release
+ b339fa45c15f2f7270a95f0f5227d33f8e733f5065c893b1c268cbaae984fddc4e29df83e1b31763fac7281ba4bc019099c4532228c64e96cfe81aaac2664d3c             4392 main/binary-arm64/Packages
+ 14434dfad35c418f634adabc6e865a82b9179d44a31958a617055e5cec756f6f89a7e642b44dfe7b86bedb45a57f9ed6198b0d295e3a098152f85c817efc1456             1743 main/binary-arm64/Packages.gz
 -----BEGIN PGP SIGNATURE-----
 
-iQIzBAEBCgAdFiEETxuky6dLcjSyeqW0vCk8QQCrblQFAmpq60MACgkQvCk8QQCr
-blRDORAAsneAylggRGfAurO21h2D9nBVvBjf4J9NOvi/AznNzB88FtrGEVIBQVSp
-UPARjwhvA2Nhni5yu4q5SVJJFtX/tzS/qj+a5KGnjzN+98aGNrLJL18PExTcdEmo
-y201jtcKrooFVe4SnXO/tYjaTB2QrbKAybhFIGtv/ZO7P216jxCD8jrzMPMya86q
-+6wKbUFVsOC8Cvl933uyeCEOkg2MjCID55yTi2z4scaDJnuahE6P8egXPkJAb10z
-82yeX0EHtMl/fQ0CKIRPR0mT/Ha8fFwRxxVKZuXHVXd/JXZT02q3sGzteoCjNRUm
-MS7gE60+uONX3aTa6SRldvqWKkjBNvg2gQPvAM4tDYLOgmbSfQstvVSsnSRSVTYR
-K6Ne10lQnjpC92bXHQd/1KYSMAzLizI3ykaS6VHWBm646D1V1rmjzfN7i1aICcCN
-viNNwom5bw5K0sn+6+xGKxKKeOhbdes1PnCybIw5wb5F1roVpDFqokGb80hEr+/G
-hl3oucWvwRyHSIND7G9/hm1v+XVLFmE2VmFIMG2dtuNm418fCDSRSv3CCq4TSHhv
-JnUeO5OcQdpCN5qayNuda6uytA3viIXGwOJI8d2njuTHAURacX1v0D9YaM56kiIL
-wwh911hUcDas/ehLVDcNvNdExth2l6NuK7JrFzhGWLz6venwNUE=
-=54MP
+iQIzBAEBCgAdFiEETxuky6dLcjSyeqW0vCk8QQCrblQFAmptkaEACgkQvCk8QQCr
+blQ2FRAAicU0jTLKW9VGVf219CHLEildcbPPO/tSlclSpAP1gdOCcYWD26hsFr6t
+c3bYGbVmfKhliG/ntoh+KwXwbN3GXG8Duhc8Y6r4aRjU/gHAak24U63SHmHroTs6
+9C0ZYzGoipC8rNH5Z7mxvZerNSXvVpobzJQyLxmLIN/btLpsFSh56gEW0j9pJ6/A
+okOXQoxiXecEzC3TGvrtWxUvhGfFohO0E8iMlPCjy+Oj5E/m125KTLsPnRfwL+18
+kT4a8kDfCCopQNEUpqe9iqtckJMUF2N0148Z8smjHXLc5wUXoh2ZgGgMf58FfUvY
+XcDkXmPYX7YlWJ2V8TC2D8gSWb0lw0YJvR0mWfKJtFIvnVebpRlvjULuPqYYd9fi
+TQjHXqlE+XYTEhmbDxGodeBjFJtH0dNHsrGLwMfeniNC563pRAb5m6hUIXDwWi3a
+/lYUXte4DRpMKgX73Ba6WmkUVZRsTofnvtGeSxaeCUMVUnj7gmVd37H+g8ZEOk8F
+WWaS8z4eOeXPoKQw9xdinsEjScItfyYO43OkWu9TG1diV070IKbTtqCdLRduvZ7z
+rg9sBS63YkcAf/Y8B/2aaMwQp+nFLl7g3LlG31xfxqikfUZm2+o61ht37+02rWSu
+pHTij5pa+ODsDv2zaY13hYVCUMR7lXHSA+S9fAh4nOn+e/FbW1Q=
+=niVy
 -----END PGP SIGNATURE-----
