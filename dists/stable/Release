@@ -1,24 +1,24 @@
 Architectures: arm64
 Codename: stable
 Components: main
-Date: Sat, 17 Oct 2026 08:04:27 +0000
+Date: Tue, 20 Oct 2026 08:46:31 +0000
 Description: ZeroCD Custom Raspberry Pi Kernel
 Label: zerocd-kernel
 Origin: ZeroCD Kernel
 Suite: stable
 MD5Sum:
- 139ed728afc30e6d294c77ffd4aefc88              197 Release
- ecb255e8d3e98b400247b513c7633ab5             4392 main/binary-arm64/Packages
- de7775354df172e3bd3fd18f968e5087             1736 main/binary-arm64/Packages.gz
+ 4300770e2f01c1331bca8cb7d57d3dc9              197 Release
+ 11d9040c119596c705c86a7261f02e79             4392 main/binary-arm64/Packages
+ d153509033e59f6c641c0e37576ee2cd             1740 main/binary-arm64/Packages.gz
 SHA1:
- bd32c37978135c72c5fda5218f0a92a63199b6b1              197 Release
- 57cc86bf740312c247b2e8dba5ad4b09949206f9             4392 main/binary-arm64/Packages
- 82c9a624c13fe63e1408e6d1713d151e37adc9c5             1736 main/binary-arm64/Packages.gz
+ f8055293fcdd7f27ccab0a60caf62aeb0b17a73d              197 Release
+ 64277daef955d2b44e7057fd9100734a2524ef23             4392 main/binary-arm64/Packages
+ 5ff4c2ccdf66acb38f00d0588f6c132497926513             1740 main/binary-arm64/Packages.gz
 SHA256:
- a49d43c64dfb3d9036be190fe6a92038c901197d824b9e4b0a2bf11ed61f0458              197 Release
- a7f4770909c85df653af4785fb6017297c5133e2f6a37af6e24b39e3c296a281             4392 main/binary-arm64/Packages
- 6ab21639c859e311f0668ce050cc63ab5fa751e20e533faa969a0649b1716ec5             1736 main/binary-arm64/Packages.gz
+ 1e15c560171f22a29ded4040b679d547f21da6296f36eec73ee119af638b9754              197 Release
+ 567ede0c9f16789183451a333b1a52c1b733380f9e34cc1f098bb68dd74fe7d8             4392 main/binary-arm64/Packages
+ 2c12fe3c1abf9be10bdc826aaf5cd68a4a52ffb3b40c2edcceebc03846f174c7             1740 main/binary-arm64/Packages.gz
 SHA512:
- 6a0a66094e950ecd7a950c4bace4b9d35d9a8496be2dacc517d5a30131f5b8fa0e5efa68d503ef467c8de728768b7e34084f182020968233378e18a1d9d67e3f              197 Release
- c9e0f63c46d2f3336cce5558e6962b6f08e3f8d27f2c9f9e47588be7a4640fc9db005180d0b5680ea8130b4ba6a2d3c7ce4716a051bdaf1a9ede75a1d656a2d6             4392 main/binary-arm64/Packages
- 3f6eb4784d96b4de14deb4fa800ce14a7630b74298f22d134d0e5e57663a41069ec06749ed21a63c786430fa790736be899e484e6aad0625a47279796e42d539             1736 main/binary-arm64/Packages.gz
+ 6745092018f529744d8a7cd5b4fe7a85687b0c53b8eadcb17df82e128a18576f9273dd4b39b5f6d0b6627dd2ab2fa023a223d94cb83f5307d9032b7914a5e89a              197 Release
+ bfac31594ab17361a87795590be5713dab291fb5ea0ee15dce1a6b0cf55c9f0c11872fa39fdc778c4febbb317cddf08c056731544df4eba222e0c1125c8d274a             4392 main/binary-arm64/Packages
+ 717c964180776f4f2a6f755c2ecf0212fdc497c80e93ec31cfd23a0e9220beb60ed9936aea7b249a2d2235d352cd3530a8fbf37653a1acfc6a56e01535bf1080             1740 main/binary-arm64/Packages.gz
